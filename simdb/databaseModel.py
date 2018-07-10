@@ -36,10 +36,12 @@ class Main(Base):
 
     id = Column(Integer(), primary_key=True, index=True)
     entry_id =  Column(String(50), unique=True, index=True) # should be discussed
-    mediawiki = Column(String(255), nullable=True)
+    url = Column(String(255), nullable=True)
     path = Column(String(255))
     sim_type = Column(String(20), nullable=True)
     description = Column(String(1023), nullable=True) # maybe longer in the future
+    created_on = Column(DateTime(), nullable=True)
+    added_on = Column(DateTime(), default=datetime.now)
     updated_on = Column(DateTime(), default=datetime.now, onupdate=datetime.now)
     children = relationship('AssociationMainMain',
                             back_populates="parent",
