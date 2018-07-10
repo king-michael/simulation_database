@@ -36,7 +36,7 @@ class Main(Base):
 
     id = Column(Integer(), primary_key=True, index=True)
     entry_id =  Column(String(50), unique=True, index=True) # should be discussed
-    #owner = Column(String(50), nullable=True)
+    owner = Column(String(50), nullable=True)
     url = Column(String(255), nullable=True)
     path = Column(String(255))
     sim_type = Column(String(20), nullable=True)
@@ -77,7 +77,7 @@ class Main(Base):
         return """{}(entry_id='{}', mediawiki='{}', path='{}')""".format(
             self.__class__.__name__,
             self.entry_id,
-            self.mediawiki,
+            self.url,
             self.path)
 
 class AssociationMainMain(Base):
