@@ -12,6 +12,12 @@ def list_all():
         sims=db.session.query(Main).all(),#join(Priority).order_by(Priority.value.desc())
     )
 
+@app.route('/<entry_id>/')
+def detail(entry_id):
+    return render_template(
+        'details.html',
+        sim=db.session.query(Main).filter(Main.entry_id == entry_id).one()
+    )
 
 # @app.route('/<name>')
 # def list_todos(name):

@@ -13,7 +13,7 @@
                 </tr>
                 {%- for sim in sims %}
                     <tr >
-                        <td>{{ sim.entry_id }}</td>
+                        <td><a href="{{ sim.entry_id }}/">{{ sim.entry_id }}</td>
                         <td>{{ sim.path }}</td>
                         <td>{{ sim.updated_on }}</td>
                     </tr>

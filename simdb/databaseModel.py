@@ -44,6 +44,11 @@ class Main(Base):
     created_on = Column(DateTime(), nullable=True)
     added_on = Column(DateTime(), default=datetime.now)
     updated_on = Column(DateTime(), default=datetime.now, onupdate=datetime.now)
+
+    n_atoms = Column(Integer(), nullable=True)
+    n_steps = Column(Integer(), nullable=True)
+    time_step = Column(Numeric(), nullable=True)
+
     children = relationship('AssociationMainMain',
                             back_populates="parent",
                             foreign_keys='AssociationMainMain.parent_id',
@@ -63,6 +68,12 @@ class Main(Base):
                             lazy='dynamic', # lazy='dynamic' -> returns query so we can filter
                             cascade="all, delete-orphan", # apply delete also for childs
                             passive_deletes=True, # apply delete also for childs
+                            )  # lazy='dynamic' -> returns query so we can filter
+    meta = relationship('MetaGroups',
+                            backref='entry_id',  # check cascade_backrefs
+                            lazy='dynamic',  # lazy='dynamic' -> returns query so we can filter
+                            cascade="all, delete-orphan",  # apply delete also for childs
+                            passive_deletes=True,  # apply delete also for childs
                             )  # lazy='dynamic' -> returns query so we can filter
     groups = relationship('Groups',
                           backref='entry_id',  # check cascade_backrefs
@@ -127,6 +138,40 @@ class Groups(Base):
             self.__class__.__name__,
             self.main_id,
             self.name)
+
+class MetaGroup(Base):
+    __tablename__ = 'metagroup'
+
+    id = Column(Integer(), primary_key=True, index=True)
+    main_id =  Column(Integer(), ForeignKey('main.id') , index=True)
+    name  =  Column(String(255), index=True)
+    entries = relationship('MetaEntries',
+                            backref='metagroup_id' , # check cascade_backrefs
+                            lazy='dynamic', # lazy='dynamic' -> returns query so we can filter
+                            cascade="all, delete-orphan", # apply delete also for childs
+                            passive_deletes=True, # apply delete also for childs
+                            )  # lazy='dynamic' -> returns query so we can filter
+
+    def __repr__(self):
+        return "{}(main_id='{}', name='{}')".format(
+            self.__class__.__name__,
+            self.main_id,
+            self.name)
+
+class MetaEntry(Base):
+    __tablename__ = 'metaentry'
+
+    id = Column(Integer(), primary_key=True, index=True)
+    metagroup_id =  Column(Integer(), ForeignKey('metagroup.id') , index=True)
+    name  =  Column(String(255), index=True)
+    value =  Column(String(255), nullable=True)
+
+    def __repr__(self):
+        return "{}(metagroup_id='{}', name='{}', value='{}')".format(
+            self.__class__.__name__,
+            self.metagroup_id,
+            self.name,
+            self.value)
 
 def establish_session(db_address='sqlite:///:memory:'):
     '''
