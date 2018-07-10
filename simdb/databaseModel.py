@@ -139,8 +139,8 @@ class Groups(Base):
             self.main_id,
             self.name)
 
-class MetaGroup(Base):
-    __tablename__ = 'metagroup'
+class MetaGroups(Base):
+    __tablename__ = 'metagroups'
 
     id = Column(Integer(), primary_key=True, index=True)
     main_id =  Column(Integer(), ForeignKey('main.id') , index=True)
@@ -162,7 +162,7 @@ class MetaEntry(Base):
     __tablename__ = 'metaentry'
 
     id = Column(Integer(), primary_key=True, index=True)
-    metagroup_id =  Column(Integer(), ForeignKey('metagroup.id') , index=True)
+    metagroup_id =  Column(Integer(), ForeignKey('metagroups.id') , index=True)
     name  =  Column(String(255), index=True)
     value =  Column(String(255), nullable=True)
 
