@@ -146,7 +146,7 @@ class MetaGroup(Base):
     main_id =  Column(Integer(), ForeignKey('main.id') , index=True)
     name  =  Column(String(255), index=True)
     entries = relationship('MetaEntry',
-                            backref='metagroup_id' , # check cascade_backrefs
+                            backref='main_id' , # check cascade_backrefs
                             lazy='dynamic', # lazy='dynamic' -> returns query so we can filter
                             cascade="all, delete-orphan", # apply delete also for childs
                             passive_deletes=True, # apply delete also for childs
