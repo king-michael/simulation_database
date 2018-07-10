@@ -1,0 +1,27 @@
+{% extends 'layout.html' %}
+{% from 'macros.html' import icon %}
+{% block content %}
+    <div class="row">
+        <div class="col-md-9">
+            {% if sims|count > 0 %}
+            <h3 class="lead">Entries</h3>
+            <table id="enty-table" class="table">
+               <tr>
+                    <th>ID</th>
+                    <th>Path</th>
+                    <th>Last update</th>
+                </tr>
+                {%- for sim in sims %}
+                    <tr >
+                        <td>{{ sim.entry_id }}</td>
+                        <td>{{ sim.path }}</td>
+                        <td>{{ sim.updated_on }}</td>
+                    </tr>
+                {%- endfor %}
+            </table>
+            {% else %}
+            <h3 class=lead>No entries found</h3>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
