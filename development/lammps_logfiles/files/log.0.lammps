@@ -1,0 +1,616 @@
+LAMMPS (6 Oct 2016)
+#########################################################################################################
+# LAMMPS input file template
+#########################################################################################################
+# equil 100 ps (100ps nvt & 100 ps npt [nequil&nsteps]	mit position restraint (fix spring, fix_modify)
+# ff raiteri modified with group crystal and fix spring: fix_modify
+#
+#########################################################################################################
+# Units metal : eV       - ps - angstrom - bar
+#       real  : kcal/mol - fs - angstrom - atm
+#########################################################################################################
+
+units metal
+
+#########################################################################################################
+# Input coordinates and force field
+#########################################################################################################
+
+variable inpfile  string system_start.data      # input filename
+variable fffile   string ff-ae_caco3.lmp # forcefield filename
+variable resfile  string "restart.*"   # restart filename
+
+#########################################################################################################
+# Run type
+#########################################################################################################
+
+variable minimise equal        1       # Energy minimisation
+variable relax    equal        1       # NVT + NPT relaxation
+variable shrink   equal        0       # Manual shrink of z (number of 0.1 steps)
+variable md       equal        0       # Plain MD
+variable plumed   equal        0       # PLUMED (metadynamcis)
+
+#########################################################################################################
+# Molecular dynamics parameters
+#########################################################################################################
+
+variable ens      equal        2       # ensemble (0=nve, 1=nvt, 2=npt, 3=ber, 4=lang, 5=csvr, 6=vres, 7=csld
+variable ts       equal        0.001  # simulation timestep (time units)
+variable nequil   equal      10000       # number of equilibration steps
+variable nsteps   equal	     10000   # number of MD steps
+
+variable temp_s   equal     300       # starting temperature
+variable temp_f   equal     300       # final simulation temperature
+variable trel     equal        0.1     # thermostat relaxation time
+variable tscale   equal        1       # thermostat relaxation freq - vel rescaling only
+variable deltat   equal       10       # maximum temperature change - vel rescaling only
+
+variable npttype  string     tri       # type of NPT (iso, aniso, tri, z...)
+variable pres     equal        1.01325 # pressure (NPT runs only)
+variable prel     equal        1.0     # barostat relaxation time
+
+#########################################################################################################
+# Output parameters
+#########################################################################################################
+
+variable ntraj    equal     1000       # trajectory output frequency - all system
+variable ntraj_s  equal     -100       # trajectory output frequency - solute only
+variable nthermo  equal     1000       # thermodynamic data output frequency
+variable dbg_erg  equal        0       # print out the energy in a gulp friendly mode for debugging
+
+#########################################################################################################
+# Energy minimisation parameters
+#########################################################################################################
+
+variable mtraj    equal       -1       # trajectory output frequency - all system
+variable etol     equal     1e-6       # % change in energy
+variable ftol     equal     1e-6       # max force threshold (force units)
+variable maxiter  equal      100       # max # of iterations
+
+#########################################################################################################
+# optional
+#########################################################################################################
+
+variable vBalance	equal 0         # enables balance & fix balance
+
+#########################################################################################################
+# 3D periodic simulation
+#########################################################################################################
+
+boundary p p p
+
+#########################################################################################################
+# Atom style - charge/vdw/bonded
+#########################################################################################################
+
+atom_style full
+
+#########################################################################################################
+# Read the input structure
+#########################################################################################################
+
+box tilt large
+if "${run_no} == 0" then "read_data ${inpfile}" else "read_restart ${resfile}"
+read_data ${inpfile}
+read_data system_start.data
+  triclinic box = (-7.485 -0.720466 -0.711001) to (22.455 25.2083 33.413) with tilt (-14.97 0 0)
+WARNING: Triclinic box skew is large (../domain.cpp:196)
+  2 by 1 by 2 MPI processor grid
+  reading atoms ...
+  2160 atoms
+  scanning bonds ...
+  3 = max bonds/atom
+  scanning angles ...
+  3 = max angles/atom
+  scanning impropers ...
+  1 = max impropers/atom
+  reading bonds ...
+  1296 bonds
+  reading angles ...
+  1296 angles
+  reading impropers ...
+  432 impropers
+  3 = max # of 1-2 neighbors
+  2 = max # of 1-3 neighbors
+  2 = max # of 1-4 neighbors
+  3 = max # of special neighbors
+# change_box all triclinic
+
+#########################################################################################################
+# Force field
+#########################################################################################################
+
+include ${fffile}
+include ff-ae_caco3.lmp
+##############################################################################################
+#### Atoms' types - mass - charge
+##############################################################################################
+#@ 8   atom types
+
+# variable O2  equal 1  # water
+# variable H2  equal 2  #
+variable C4  equal 2  # carbonate
+variable O4  equal 3  #
+# variable Mg  equal 5  # magnesium
+variable Ca  equal 1  # calcium
+# variable Sr  equal 7  # strontium
+# variable Ba  equal 8  # barium
+
+##############################################################################################
+#### Atoms' masses
+##############################################################################################
+
+# mass  ${O2}    16.000
+# mass  ${H2}     1.010
+mass  ${C4}    12.010
+mass  2    12.010
+mass  ${O4}    16.000
+mass  3    16.000
+# mass  ${Mg}    24.310
+mass  ${Ca}    40.080
+mass  1    40.080
+# mass  ${Sr}    87.620
+# mass  ${Ba}   137.330
+
+##############################################################################################
+#### Atoms' charges
+##############################################################################################
+
+# set type ${O2}  charge    -0.820000
+# set type ${H2}  charge     0.410000
+set type ${C4}  charge     1.123285
+set type 2  charge     1.123285
+  432 settings made for charge
+set type ${O4}  charge    -1.041095
+set type 3  charge    -1.041095
+  1296 settings made for charge
+# set type ${Mg}  charge     2.000000
+set type ${Ca}  charge     2.000000
+set type 1  charge     2.000000
+  432 settings made for charge
+# set type ${Sr}  charge     2.000000
+# set type ${Ba}  charge     2.000000
+
+##############################################################################################
+#### Covalent bonds parameters
+##############################################################################################
+#@  2   bond types
+
+# bond_style  hybrid harmonic morse
+# #@ O2 - H2
+# bond_coeff   1   harmonic    22.965000      1.0120000
+# #@ C4 - O4
+# bond_coeff   2   harmonic    20.424650      1.3042000
+bond_style  harmonic
+bond_coeff   1   20.424650      1.3042000
+
+##############################################################################################
+#### Covalent angles parameters
+##############################################################################################
+#@  2   angle types
+
+# angle_style  hybrid class2   harmonic
+# #@ H2 - O2 - H2
+# angle_coeff   1   harmonic    1.6456800      113.24000
+# #@ O4 - C4 - O4
+# angle_coeff   2   class2      120.00000      6.6170000      0.0000000      0.0000000
+# angle_coeff   2   class2 bb   12.818000      1.3042000      1.3042000
+# angle_coeff   2   class2 ba   1.5331900      1.5331900      1.3042000      1.3042000
+
+angle_style  class2
+angle_coeff   1         120.00000      6.6170000      0.0000000      0.0000000
+angle_coeff   1    bb   12.818000      1.3042000      1.3042000
+angle_coeff   1    ba   1.5331900      1.5331900      1.3042000      1.3042000
+
+##############################################################################################
+#### Covalent dihedrals parameters
+##############################################################################################
+#@  0   dihedral types
+
+##############################################################################################
+#### Covalent improper dihedrals parameters
+##############################################################################################
+#@  1   improper types
+
+improper_style distance
+#@  C4-O4-O4-O4
+improper_coeff   1     13.647000      360.00000
+
+##############################################################################################
+# Pair potentials
+##############################################################################################
+
+variable rmin  equal 6.
+variable rmax  equal 9.
+variable rcoul equal 9.
+
+# pair_style hybrid/overlay coul/long ${rcoul} lj/cut ${rmax} lj/mdf ${rmin} ${rmax} buck/mdf ${rmin} ${rmax}
+pair_style hybrid/overlay coul/long ${rcoul} buck/mdf ${rmin} ${rmax}
+pair_style hybrid/overlay coul/long 9 buck/mdf ${rmin} ${rmax}
+pair_style hybrid/overlay coul/long 9 buck/mdf 6 ${rmax}
+pair_style hybrid/overlay coul/long 9 buck/mdf 6 9
+pair_coeff       *       *             coul/long
+
+##############################################################################################
+# Interactions with water
+# Water
+# pair_coeff     ${O2}   ${O2}             lj/cut      0.00674        3.165492
+pair_modify tail yes
+
+# Alkaline earths
+# pair_coeff     ${O2}   ${Mg}             lj/mdf      0.001137       2.82
+# pair_coeff     ${O2}   ${Ca}             lj/mdf      0.00095        3.35
+# pair_coeff     ${O2}   ${Sr}             lj/mdf      0.000776       3.65
+# pair_coeff     ${O2}   ${Ba}             lj/mdf      0.000657       3.965
+
+# Carbonate
+# pair_coeff     ${O2}   ${O4}           buck/mdf  12534.455133       0.202          0.
+# pair_coeff     ${H2}   ${O4}           buck/mdf    340.             0.217          0.
+
+##############################################################################################
+# Carbonate - carbonat
+pair_coeff     ${O4}   ${O4}           buck/mdf  63840.199          0.198913      27.89901
+pair_coeff     3   ${O4}           buck/mdf  63840.199          0.198913      27.89901
+pair_coeff     3   3           buck/mdf  63840.199          0.198913      27.89901
+
+##############################################################################################
+# Interactions with carbonate -
+# pair_coeff     ${O4}   ${Mg}           buck/mdf   3944.8613         0.238160       0.0
+pair_coeff      ${Ca} ${O4}             buck/mdf   3161.6335         0.271511       0.
+pair_coeff      1 ${O4}             buck/mdf   3161.6335         0.271511       0.
+pair_coeff      1 3             buck/mdf   3161.6335         0.271511       0.
+# pair_coeff     ${O4}   ${Sr}           buck/mdf  14250.269          0.244116       0.
+# pair_coeff     ${O4}   ${Ba}           buck/mdf  13478.151          0.258299       0.
+
+special_bonds lj 0.  0.  0.  coul 0.  0.  0.
+
+#########################################################################################################
+# Parameters for reciprocal space electrostatics
+#########################################################################################################
+
+kspace_style pppm 1.0e-5
+kspace_modify fftbench no
+
+
+if "${vBalance} > 0" then "print 'rebalance simulation grid'" "balance 1.0 shift xyz 20 1.1"
+
+#########################################################################################################
+# Thermodynamic output
+#########################################################################################################
+
+variable str_basic string 'step time pe temp press'
+
+# MD ensemble (0=nve, 1=nvt, 2=npt, 3=ber, 4=lang, 5=stoc, 6=vres)
+variable str_ens string ' '
+if "${ens} == 0" then "variable str_ens string 'etotal'"
+if "${ens} == 2 && ${npttype} == iso"   then "variable str_ens string 'vol'"
+if "${ens} == 2 && ${npttype} == aniso" then "variable str_ens string 'vol cella cellb cellc'"
+if "${ens} == 2 && ${npttype} == z"     then "variable str_ens string 'vol cellc'"
+if "${ens} == 2 && ${npttype} == tri"   then "variable str_ens string 'vol cella cellb cellc cellalpha cellbeta cellgamma'"
+variable str_ens string 'vol cella cellb cellc cellalpha cellbeta cellgamma'
+
+# variables for a gulp friendly output
+variable str_dbg string ' '
+if "${dbg_erg} == 1" then   "variable e2body    equal ebond+evdwl"   "variable ecoul_tot equal ecoul+elong"   "variable str_dbg string 'ebond eangle edihed eimp evdwl ecoul elong etail v_e2body v_ecoul_tot'"
+
+thermo_style custom ${str_basic} ${str_ens} ${str_dbg} cpu
+thermo_style custom step time pe temp press ${str_ens} ${str_dbg} cpu
+thermo_style custom step time pe temp press vol cella cellb cellc cellalpha cellbeta cellgamma ${str_dbg} cpu
+thermo_style custom step time pe temp press vol cella cellb cellc cellalpha cellbeta cellgamma   cpu
+thermo_modify flush yes
+thermo ${nthermo}
+thermo 1000
+
+#########################################################################################################
+# Groups' definitions
+#########################################################################################################
+
+if "${run_no} > 0" then "jump SELF end_groups"
+  group free id > -1
+2160 atoms in group free
+#  group water type ${O2} ${H2}
+#  group solute subtract all water
+label end_groups
+
+#######################################################
+#                groups                               #
+#######################################################
+# group spce type  ${H2}  ${O2}
+group crystal type  ${Ca} ${C4} ${O4}
+group crystal type  1 ${C4} ${O4}
+group crystal type  1 2 ${O4}
+group crystal type  1 2 3
+2160 atoms in group crystal
+# group ca type ${Ca}
+# group c4 type ${C4}
+# group o4 type ${O4}
+# group co3 type ${C4} ${O4}
+#######################################################
+#                Turn on position restraints          #
+#######################################################
+#fix tether crystal spring/self 1000.0
+#fix_modify tether energy yes
+
+#########################################################################################################
+# Eneergy minimisation
+#########################################################################################################
+
+if "${minimise} <= 0 || ${run_no} > 0" then "jump SELF end_minimise"
+  print "Doing CG minimisation"
+Doing CG minimisation
+#was tun hier mit ff
+  if "${mtraj} > 0" then     "dump mdcd all dcd ${mtraj} min.dcd"     "dump_modify mdcd unwrap yes"
+  min_style cg
+  min_modify line quadratic
+  minimize ${etol} ${ftol} ${maxiter} ${maxiter}
+  minimize 1e-06 ${ftol} ${maxiter} ${maxiter}
+  minimize 1e-06 1e-06 ${maxiter} ${maxiter}
+  minimize 1e-06 1e-06 100 ${maxiter}
+  minimize 1e-06 1e-06 100 100
+WARNING: Resetting reneighboring criteria during minimization (../min.cpp:168)
+PPPM initialization ...
+WARNING: Using 12-bit tables for long-range coulomb (../kspace.cpp:316)
+  G vector (1/distance) = 0.367738
+  grid = 40 60 45
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.00011523
+  estimated relative force accuracy = 8.0023e-06
+  using double precision FFTs
+  3d grid and FFT values/proc = 60030 28800
+Neighbor list info ...
+  2 neighbor list requests
+  update every 1 steps, delay 0 steps, check yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 11
+  ghost atom cutoff = 11
+  binsize = 5.5 -> bins = 9 5 7
+Memory usage per processor = 14.0682 Mbytes
+Step Time PotEng Temp Press Volume Cella Cellb Cellc CellAlpha CellBeta CellGamma CPU 
+       0            0   -12934.187            0   -10952.476    26490.741    29.940001    29.939997    34.124001           90           90    120.00001            0 
+       2        0.002   -12935.117            0   -19339.473    26490.741    29.940001    29.939997    34.124001           90           90    120.00001  0.086416006 
+Loop time of 0.086457 on 4 procs for 2 steps with 2160 atoms
+
+99.5% CPU use with 4 MPI tasks x 1 OpenMP threads
+
+Minimization stats:
+  Stopping criterion = energy tolerance
+  Energy initial, next-to-last, final = 
+        -12934.1872042      -12935.116473     -12935.1167799
+  Force two-norm initial, final = 11.3185 0.171434
+  Force max component initial, final = 0.32974 0.00919865
+  Final line search alpha, max atom move = 1 0.00919865
+  Iterations, force evaluations = 2 4
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 0.03439    | 0.035248   | 0.037226   |   0.6 | 40.77
+Bond    | 0.00035334 | 0.00041658 | 0.00049973 |   0.3 |  0.48
+Kspace  | 0.047336   | 0.049392   | 0.050292   |   0.5 | 57.13
+Neigh   | 0          | 0          | 0          |   0.0 |  0.00
+Comm    | 0.0009129  | 0.00096655 | 0.001035   |   0.1 |  1.12
+Output  | 0          | 0          | 0          |   0.0 |  0.00
+Modify  | 0          | 0          | 0          |   0.0 |  0.00
+Other   |            | 0.000433   |            |       |  0.50
+
+Nlocal:    540 ave 540 max 540 min
+Histogram: 4 0 0 0 0 0 0 0 0 0
+Nghost:    5798 ave 5798 max 5798 min
+Histogram: 4 0 0 0 0 0 0 0 0 0
+Neighs:    123552 ave 123552 max 123552 min
+Histogram: 4 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 494208
+Ave neighs/atom = 228.8
+Ave special neighs/atom = 2.4
+Neighbor list builds = 0
+Dangerous builds = 0
+  reset_timestep 0
+  if "${mtraj} > 0" then     "undump mdcd"
+label end_minimise
+
+#########################################################################################################
+# Timestep in ps
+#########################################################################################################
+
+timestep ${ts}
+timestep 0.001
+
+#########################################################################################################
+# Restart file
+#########################################################################################################
+
+restart 100000 restart.1 restart.2
+
+#########################################################################################################
+# Trajectory output - whole system and solute only
+#########################################################################################################
+
+if "${ntraj} > 0" then   "dump 1 all dcd ${ntraj} trajectory.${run_no}.dcd"   "dump_modify 1 unwrap yes"
+dump 1 all dcd ${ntraj} trajectory.${run_no}.dcd
+dump 1 all dcd 1000 trajectory.${run_no}.dcd
+dump 1 all dcd 1000 trajectory.0.dcd
+dump_modify 1 unwrap yes
+
+if "${ntraj_s} > 0" then   "dump 2 solute dcd ${ntraj_s} solute.${run_no}.dcd"   "dump_modify 2 unwrap yes"
+
+#########################################################################################################
+# Remove the centre of mass motion
+#########################################################################################################
+
+fix com free momentum 1000 linear 1 1 1
+
+#if "${vBalance} > 0" then #"fix fBalance all balance 1000 1.1 shift xyz 10 1.1"
+
+#fix 	shake	all	shake 0.0001	20 	1 	b 1 a 1
+
+
+#########################################################################################################
+# Relax structure NVT + NPT
+#########################################################################################################
+
+if "${relax} <= 0" then "jump SELF end_relax"
+  if "${run_no} > 0" then "jump SELF end_relax"
+  print "Doing NVT-NPT relaxation"
+Doing NVT-NPT relaxation
+  velocity free create ${temp_s} ${iseed0} mom yes dist gaussian
+  velocity free create 300 ${iseed0} mom yes dist gaussian
+  velocity free create 300 18497 mom yes dist gaussian
+  fix nve free nve
+  fix md free temp/csvr ${temp_s} ${temp_f} ${trel} ${iseed1}
+  fix md free temp/csvr 300 ${temp_f} ${trel} ${iseed1}
+  fix md free temp/csvr 300 300 ${trel} ${iseed1}
+  fix md free temp/csvr 300 300 0.1 ${iseed1}
+  fix md free temp/csvr 300 300 0.1 23423
+  run ${nequil}
+  run 10000
+PPPM initialization ...
+WARNING: Using 12-bit tables for long-range coulomb (../kspace.cpp:316)
+  G vector (1/distance) = 0.367738
+  grid = 40 60 45
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.00011523
+  estimated relative force accuracy = 8.0023e-06
+  using double precision FFTs
+  3d grid and FFT values/proc = 60030 28800
+Neighbor list info ...
+  2 neighbor list requests
+  update every 1 steps, delay 10 steps, check yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 11
+  ghost atom cutoff = 11
+  binsize = 5.5 -> bins = 9 5 7
+Memory usage per processor = 13.0224 Mbytes
+Step Time PotEng Temp Press Volume Cella Cellb Cellc CellAlpha CellBeta CellGamma CPU 
+       0            0   -12935.117          300   -15963.775    26490.741    29.940001    29.939997    34.124001           90           90    120.00001            0 
+    1000            1   -12848.819    297.18875   -15519.945    26490.741    29.940001    29.939997    34.124001           90           90    120.00001    18.459522 
+    2000            2   -12852.312    308.92021   -14377.019    26490.741    29.940001    29.939997    34.124001           90           90    120.00001    35.070796 
+    3000            3   -12850.376    307.32398   -15190.001    26490.741    29.940001    29.939997    34.124001           90           90    120.00001    51.099915 
+    4000            4   -12850.214    306.81647   -15321.214    26490.741    29.940001    29.939997    34.124001           90           90    120.00001      67.8015 
+    5000            5   -12849.556    297.05806   -13412.142    26490.741    29.940001    29.939997    34.124001           90           90    120.00001    83.380676 
+    6000            6   -12852.303    298.73612   -15006.986    26490.741    29.940001    29.939997    34.124001           90           90    120.00001    99.358594 
+    7000            7   -12852.663    294.36886    -13630.95    26490.741    29.940001    29.939997    34.124001           90           90    120.00001     115.7227 
+    8000            8   -12851.357    308.84925    -14893.33    26490.741    29.940001    29.939997    34.124001           90           90    120.00001    130.29981 
+    9000            9   -12851.363    301.51852   -15630.286    26490.741    29.940001    29.939997    34.124001           90           90    120.00001    146.71112 
+   10000           10   -12849.491    306.93794   -13301.843    26490.741    29.940001    29.939997    34.124001           90           90    120.00001    164.67159 
+Loop time of 164.672 on 4 procs for 10000 steps with 2160 atoms
+
+Performance: 5.247 ns/day, 4.574 hours/ns, 60.727 timesteps/s
+99.6% CPU use with 4 MPI tasks x 1 OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 49.954     | 50.363     | 51.118     |   6.5 | 30.58
+Bond    | 0.59107    | 0.59612    | 0.5998     |   0.5 |  0.36
+Kspace  | 109.38     | 110.09     | 110.56     |   4.3 | 66.85
+Neigh   | 0          | 0          | 0          |   0.0 |  0.00
+Comm    | 2.2779     | 2.3447     | 2.4069     |   3.8 |  1.42
+Output  | 0.0026274  | 0.0026737  | 0.0027492  |   0.1 |  0.00
+Modify  | 0.56705    | 0.58681    | 0.60955    |   2.4 |  0.36
+Other   |            | 0.6878     |            |       |  0.42
+
+Nlocal:    540 ave 540 max 540 min
+Histogram: 4 0 0 0 0 0 0 0 0 0
+Nghost:    5798 ave 5798 max 5798 min
+Histogram: 4 0 0 0 0 0 0 0 0 0
+Neighs:    123552 ave 123593 max 123511 min
+Histogram: 2 0 0 0 0 0 0 0 0 2
+
+Total # of neighbors = 494208
+Ave neighs/atom = 228.8
+Ave special neighs/atom = 2.4
+Neighbor list builds = 0
+Dangerous builds = 0
+  unfix nve
+  unfix md
+
+  velocity free create ${temp_s} ${iseed2} mom yes dist gaussian
+  velocity free create 300 ${iseed2} mom yes dist gaussian
+  velocity free create 300 29322 mom yes dist gaussian
+  fix md free npt temp ${temp_s} ${temp_f} ${trel} ${npttype} ${pres} ${pres} ${prel} tchain 5 pchain 5 mtk yes
+  fix md free npt temp 300 ${temp_f} ${trel} ${npttype} ${pres} ${pres} ${prel} tchain 5 pchain 5 mtk yes
+  fix md free npt temp 300 300 ${trel} ${npttype} ${pres} ${pres} ${prel} tchain 5 pchain 5 mtk yes
+  fix md free npt temp 300 300 0.1 ${npttype} ${pres} ${pres} ${prel} tchain 5 pchain 5 mtk yes
+  fix md free npt temp 300 300 0.1 tri ${pres} ${pres} ${prel} tchain 5 pchain 5 mtk yes
+  fix md free npt temp 300 300 0.1 tri 1.01325 ${pres} ${prel} tchain 5 pchain 5 mtk yes
+  fix md free npt temp 300 300 0.1 tri 1.01325 1.01325 ${prel} tchain 5 pchain 5 mtk yes
+  fix md free npt temp 300 300 0.1 tri 1.01325 1.01325 1 tchain 5 pchain 5 mtk yes
+  run ${nsteps}
+  run 10000
+PPPM initialization ...
+WARNING: Using 12-bit tables for long-range coulomb (../kspace.cpp:316)
+  G vector (1/distance) = 0.367738
+  grid = 40 60 45
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.00011523
+  estimated relative force accuracy = 8.0023e-06
+  using double precision FFTs
+  3d grid and FFT values/proc = 60030 28800
+Memory usage per processor = 13.0376 Mbytes
+Step Time PotEng Temp Press Volume Cella Cellb Cellc CellAlpha CellBeta CellGamma CPU 
+   10000           10   -12849.491          300   -13379.911    26490.741    29.940001    29.939997    34.124001           90           90    120.00001            0 
+   11000           11   -12854.184    295.86244    2454.4031    26106.509    29.600977    29.611169    34.386864    90.027707    89.989416    119.98536    24.714863 
+   12000           12   -12852.264    301.86268    2324.3413    26103.286    29.578415    29.578053    34.450724    89.997303     90.01056    119.99504    47.687702 
+   13000           13   -12854.346    295.10956   -414.83325    26153.417    29.608622    29.612523    34.442758    89.971814    89.996081    119.99855     70.32136 
+   14000           14    -12853.49    304.28396    530.36841    26131.044    29.588078    29.597714    34.456807    90.001863    89.941504    120.00538    91.659755 
+   15000           15    -12854.31    300.52742   -999.46272    26138.755    29.602621    29.623688    34.432194    90.102328     89.95293    120.04088    112.79324 
+   16000           16   -12854.789    299.20638   -1529.2026    26209.949    29.627473    29.610489    34.491515     89.97762    90.051406    119.98097    134.36384 
+   17000           17   -12854.686    304.21489    2599.9271    26114.705    29.601802    29.576366    34.448364    89.992645    89.969199    120.01758    158.14549 
+   18000           18   -12856.303    298.79894   -1373.7257    26173.199    29.644802    29.613244    34.423164    89.913067    89.999609    119.99051    185.06825 
+   19000           19   -12852.862    300.25893   -96.332848    26149.733    29.620836    29.601279    34.454283    90.021516    89.917054    120.04883    208.61206 
+   20000           20   -12855.231    293.87101   -457.62753    26134.442    29.603389    29.616152    34.409112    89.955467     90.11658    119.96799     231.9109 
+Loop time of 231.911 on 4 procs for 10000 steps with 2160 atoms
+
+Performance: 3.726 ns/day, 6.442 hours/ns, 43.120 timesteps/s
+99.9% CPU use with 4 MPI tasks x 1 OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 49.327     | 49.824     | 50.65      |   7.3 | 21.48
+Bond    | 0.65127    | 0.65524    | 0.65798    |   0.3 |  0.28
+Kspace  | 108.07     | 108.91     | 109.42     |   5.0 | 46.96
+Neigh   | 0.28708    | 0.28723    | 0.28735    |   0.0 |  0.12
+Comm    | 1.9707     | 2.2228     | 2.4139     |  12.1 |  0.96
+Output  | 0.0027001  | 0.0027902  | 0.0028288  |   0.1 |  0.00
+Modify  | 61.443     | 63.099     | 66.882     |  27.8 | 27.21
+Other   |            | 6.907      |            |       |  2.98
+
+Nlocal:    540 ave 544 max 536 min
+Histogram: 1 0 0 0 0 2 0 0 0 1
+Nghost:    5860.25 ave 5866 max 5855 min
+Histogram: 1 0 0 1 0 1 0 0 0 1
+Neighs:    125388 ave 126397 max 124366 min
+Histogram: 1 0 0 0 1 1 0 0 0 1
+
+Total # of neighbors = 501551
+Ave neighs/atom = 232.2
+Ave special neighs/atom = 2.4
+Neighbor list builds = 41
+Dangerous builds = 0
+  unfix md
+  reset_timestep 0
+  write_restart final_restart.${run_no}
+  write_restart final_restart.0
+PPPM initialization ...
+WARNING: Using 12-bit tables for long-range coulomb (../kspace.cpp:316)
+  G vector (1/distance) = 0.368041
+  grid = 40 54 45
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.000113912
+  estimated relative force accuracy = 7.91073e-06
+  using double precision FFTs
+  3d grid and FFT values/proc = 54810 25920
+  write_data final_data.${run_no}
+  write_data final_data.0
+PPPM initialization ...
+WARNING: Using 12-bit tables for long-range coulomb (../kspace.cpp:316)
+  G vector (1/distance) = 0.368041
+  grid = 40 54 45
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.000113912
+  estimated relative force accuracy = 7.91073e-06
+  using double precision FFTs
+  3d grid and FFT values/proc = 54810 25920
+  quit
