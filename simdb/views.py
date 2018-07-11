@@ -29,13 +29,7 @@ def datatables():
 
     return json.dumps(table.json())
 
-# def perform_search(queryset, user_input):
-#     return queryset.filter(
-#         db.or_(
-#             User.full_name.like('%' + user_input + '%'),
-#             Address.description.like('%' + user_input + '%')
-#             )
-#         )
+
 
 # @app.route('/<name>')
 # def list_todos(name):
