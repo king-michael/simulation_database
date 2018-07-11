@@ -1,0 +1,42 @@
+{% extends 'layout.html' %}
+{% from 'macros.html' import icon %}
+{% block content %}
+    <div class="row">
+        <div class="col-md-9">
+            <h3 class="lead">{{ sim.entry_id}}</h3>
+            <table id="enty-table" class="table">
+               <tr>
+                    <td>Owner</td>
+                    <td>{{ sim.owner }}</td>
+                </tr>
+                <tr>
+                    <td>Url</td>
+                    <td>{{ sim.url }}</td>
+                </tr>
+                <tr>
+                    <td>Path</td>
+                    <td>{{ sim.path }}</td>
+                </tr>
+                <tr>
+                    <td>Type</td>
+                    <td>{{ sim.sim_type }}</td>
+                </tr>
+                <tr>
+                    <td>Description</td>
+                    <td>{{ sim.description }}</td>
+                </tr>
+                <tr>
+                    <td>Created</td>
+                    <td>{{ sim.created_on }}</td>
+                </tr>
+                <tr>
+                    <td>Added</td>
+                    <td>{{ sim.added_on }}</td>
+                </tr>
+                <tr>
+                    <td>Last update</td>
+                    <td>{{ sim.updated_on }}</td>
+                </tr>
+        </div>
+    </div>
+{% endblock %}

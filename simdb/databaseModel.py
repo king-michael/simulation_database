@@ -36,6 +36,7 @@ class Main(Base):
 
     id = Column(Integer(), primary_key=True, index=True)
     entry_id =  Column(String(50), unique=True, index=True) # should be discussed
+    owner = Column(String(50), nullable=True)
     url = Column(String(255), nullable=True)
     path = Column(String(255))
     sim_type = Column(String(20), nullable=True)
@@ -43,6 +44,11 @@ class Main(Base):
     created_on = Column(DateTime(), nullable=True)
     added_on = Column(DateTime(), default=datetime.now)
     updated_on = Column(DateTime(), default=datetime.now, onupdate=datetime.now)
+
+    n_atoms = Column(Integer(), nullable=True)
+    n_steps = Column(Integer(), nullable=True)
+    time_step = Column(Numeric(), nullable=True)
+
     children = relationship('AssociationMainMain',
                             back_populates="parent",
                             foreign_keys='AssociationMainMain.parent_id',
@@ -63,6 +69,12 @@ class Main(Base):
                             cascade="all, delete-orphan", # apply delete also for childs
                             passive_deletes=True, # apply delete also for childs
                             )  # lazy='dynamic' -> returns query so we can filter
+    meta = relationship('MetaGroups',
+                            backref='entry_id',  # check cascade_backrefs
+                            lazy='dynamic',  # lazy='dynamic' -> returns query so we can filter
+                            cascade="all, delete-orphan",  # apply delete also for childs
+                            passive_deletes=True,  # apply delete also for childs
+                            )  # lazy='dynamic' -> returns query so we can filter
     groups = relationship('Groups',
                           backref='entry_id',  # check cascade_backrefs
                           lazy='dynamic',  # lazy='dynamic' -> returns query so we can filter
@@ -76,7 +88,7 @@ class Main(Base):
         return """{}(entry_id='{}', mediawiki='{}', path='{}')""".format(
             self.__class__.__name__,
             self.entry_id,
-            self.mediawiki,
+            self.url,
             self.path)
 
 class AssociationMainMain(Base):
@@ -126,6 +138,40 @@ class Groups(Base):
             self.__class__.__name__,
             self.main_id,
             self.name)
+
+class MetaGroups(Base):
+    __tablename__ = 'metagroups'
+
+    id = Column(Integer(), primary_key=True, index=True)
+    main_id =  Column(Integer(), ForeignKey('main.id') , index=True)
+    name  =  Column(String(255), index=True)
+    entries = relationship('MetaEntry',
+                            backref='main_id' , # check cascade_backrefs
+                            lazy='dynamic', # lazy='dynamic' -> returns query so we can filter
+                            cascade="all, delete-orphan", # apply delete also for childs
+                            passive_deletes=True, # apply delete also for childs
+                            )  # lazy='dynamic' -> returns query so we can filter
+
+    def __repr__(self):
+        return "{}(main_id='{}', name='{}')".format(
+            self.__class__.__name__,
+            self.main_id,
+            self.name)
+
+class MetaEntry(Base):
+    __tablename__ = 'metaentry'
+
+    id = Column(Integer(), primary_key=True, index=True)
+    metagroup_id =  Column(Integer(), ForeignKey('metagroups.id') , index=True)
+    name  =  Column(String(255), index=True)
+    value =  Column(String(255), nullable=True)
+
+    def __repr__(self):
+        return "{}(metagroup_id='{}', name='{}', value='{}')".format(
+            self.__class__.__name__,
+            self.metagroup_id,
+            self.name,
+            self.value)
 
 def establish_session(db_address='sqlite:///:memory:'):
     '''
