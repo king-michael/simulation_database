@@ -16,14 +16,8 @@ import tempfile
 import os
 
 # define GMXBIN
-if 'GMXBIN' in os.environ:
-    GMXBIN = os.environ['GMXBIN']
-else:
-    GMXBIN = '/home/micha/software/GROMACS/gromacs_2016.3_ompi-1.10.2_gcc-5.4/inst/oldcpu/bin/'
-
-# path to gmx executable
-GMX = os.path.join(GMXBIN, 'gmx')
-
+if 'GMXBIN' not in os.environ:
+    os.environ['GMXBIN'] =  '/home/micha/software/GROMACS/gromacs_2016.3_ompi-1.10.2_gcc-5.4/inst/oldcpu/bin/'
 
 def compare_caseinsensitve(text1, text2):
     # type: (str, str) -> bool
@@ -61,6 +55,11 @@ def get_mdpparameters(tprfile):
         Dictionary of mdp-parameters in the tpr file
     """
 
+    # get the folder of the gromacs executa
+    GMXBIN = os.environ['GMXBIN']
+    # path to gmx executable
+    GMX = os.path.join(GMXBIN, 'gmx')
+    
     # create a temp dir
     tmp_dir = tempfile.mkdtemp()
     mdpfile = os.path.join(tmp_dir, 'tmp.mdp')
@@ -111,14 +110,19 @@ def map_gromacs_to_database(keywords):
         dictionary of mapped parameters to be feed in the database
     """
 
+    master_dict = dict()
     rv = dict()
 
     # mapping general stuff
     if 'dt' in keywords.keys():
-        rv['dt'] = float(keywords['dt'])
-        rv['nsteps'] = int(keywords['nsteps'])
+        rv['time_step'] = float(keywords['dt'])
+        rv['n_steps'] = int(keywords['nsteps'])
 
+    master_dict.update(rv)
+    
+    
     # mapping barostats
+    rv = dict()
     if 'pcoupl' in keywords.keys():
         if compare_caseinsensitve(keywords['pcoupl'], 'Berendsen'):
             rv['barostat_type'] = 'Berendsen'
@@ -147,8 +151,10 @@ def map_gromacs_to_database(keywords):
             rv['p_relax'] = keywords['tau-p']
             rv['p_target'] = " ".join(keywords['ref-p'].split()[:n_p])
             rv['p_compressibility'] = " ".join(keywords['compressibility'].split()[:n_p])
-
+    master_dict['thermostat'] = rv
+    
     # mapping thermostat
+    rv = dict()
     if 'tcoupl' in keywords.keys():
         if compare_caseinsensitve(keywords['tcoupl'], 'berendsen'):
             rv['thermostat_type'] = 'Berendsen'
@@ -169,8 +175,9 @@ def map_gromacs_to_database(keywords):
             t_target = list(set(keywords['ref-t'].split()))
             assert len(t_target) == 1, 'Not implemented different groups'
             rv['T_target'] = t_target[0]
-
-    return rv
+    master_dict['barostat'] = rv
+    
+    return master_dict
 
 def main(tprfile):
     """
