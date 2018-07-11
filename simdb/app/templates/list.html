@@ -5,19 +5,29 @@
         <div class="col-md-9">
             {% if sims|count > 0 %}
             <h3 class="lead">Entries</h3>
-            <table id="enty-table" class="table">
-               <tr>
-                    <th>ID</th>
-                    <th>Path</th>
-                    <th>Last update</th>
-                </tr>
+            <table id="qs_table" class="table sortable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Owner</th>
+                        <th>Last update</th>
+                        {%- for k in keywords %}
+                        <th>{{ k[0] }}</th>
+                        {%- endfor %}
+                    </tr>
+                </thead>
+                <tbody>
                 {%- for sim in sims %}
-                    <tr >
-                        <td><a href="{{ sim.entry_id }}/">{{ sim.entry_id }}</td>
-                        <td>{{ sim.path }}</td>
-                        <td>{{ sim.updated_on }}</td>
+                    <tr id="{{ sim.entry_id}}" class="entry">
+                        <td class="entry_id"><a href="{{ sim.entry_id }}/">{{ sim.entry_id }}</td>
+                        <td class="owner">{{ sim.owner }}</td>
+                        <td class="updated">{{ sim.updated_on.strftime("%d.%m.%Y") }}</td>
+                        {%- for k in keywords %}
+                        <td>{{ sim.keywords.filter_by(name = k[0]).first().value }}</td>
+                        {%- endfor %}
                     </tr>
                 {%- endfor %}
+                </tbody>
             </table>
             {% else %}
             <h3 class=lead>No entries found</h3>

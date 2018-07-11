@@ -11,6 +11,7 @@
     <script src="/static/js/jquery-2.1.3.js"></script>
     <script src="/static/js/bootstrap.js"></script>
     <script src="/static/js/bootstrap-select.js"></script>
+    <script src="/static/js/sortable.js"></script>
     <script>
         $(document).ready(function () {
             $('.selectpicker').selectpicker();
@@ -45,6 +46,7 @@
         form {
             display: inline-block;
         }
+
 
     </style>
 </head>
@@ -84,14 +86,6 @@
     {% endwith %}
     {% block content %}{% endblock %}
 </div>
-
-
-<footer id="footer">
-    <div class="container">
-        <hr>
-        <p class="text-center">Todo App built using Flask, SQLAlchemy, Vertabelo, PostgreSQL and Twitter Bootstrap</p>
-    </div>
-</footer>
 
 
 </body>

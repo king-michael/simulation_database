@@ -1,15 +1,18 @@
 from flask import render_template, request, redirect, flash,url_for
-from databaseModel import Main
+from databaseModel import Main, Keywords
 from databaseViewer import app
 from app import db
 #from databaseAPI import getEntryTable
+from datatables import DataTable
+import json
 
 
 @app.route('/')
 def list_all():
     return render_template(
         'list.html',
-        sims=db.session.query(Main).all(),#join(Priority).order_by(Priority.value.desc())
+        keywords = db.session.query(Keywords.name).filter(Keywords.value != None).distinct().all(),
+        sims     = db.session.query(Main).all(),#join(Priority).order_by(Priority.value.desc())
     )
 
 @app.route('/<entry_id>/')
@@ -18,6 +21,21 @@ def detail(entry_id):
         'details.html',
         sim=db.session.query(Main).filter(Main.entry_id == entry_id).one()
     )
+@app.route("/data")
+def datatables():
+    table = DataTable(request.args, Main, db.session.query(Main), ["id"])
+    table.add_data(link=lambda obj: url_for('view_user', id=obj.id))
+    # table.searchable(lambda queryset, user_input: perform_search(queryset, user_input))
+
+    return json.dumps(table.json())
+
+# def perform_search(queryset, user_input):
+#     return queryset.filter(
+#         db.or_(
+#             User.full_name.like('%' + user_input + '%'),
+#             Address.description.like('%' + user_input + '%')
+#             )
+#         )
 
 # @app.route('/<name>')
 # def list_todos(name):

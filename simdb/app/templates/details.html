@@ -27,15 +27,15 @@
                 </tr>
                 <tr>
                     <td>Created</td>
-                    <td>{{ sim.created_on }}</td>
+                    <td>{% if sim.created_on != None %} {{ sim.created_on.strftime("%d.%m.%Y") }} {% endif %}</td>
                 </tr>
                 <tr>
                     <td>Added</td>
-                    <td>{{ sim.added_on }}</td>
+                    <td>{{ sim.added_on.strftime("%d.%m.%Y") }}</td>
                 </tr>
                 <tr>
                     <td>Last update</td>
-                    <td>{{ sim.updated_on }}</td>
+                    <td>{{ sim.updated_on.strftime("%d.%m.%Y") }}</td>
                 </tr>
         </div>
     </div>
