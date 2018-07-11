@@ -18,10 +18,6 @@
                     <td>{{ sim.path }}</td>
                 </tr>
                 <tr>
-                    <td>Type</td>
-                    <td>{{ sim.sim_type }}</td>
-                </tr>
-                <tr>
                     <td>Description</td>
                     <td>{{ sim.description }}</td>
                 </tr>
@@ -37,6 +33,54 @@
                     <td>Last update</td>
                     <td>{{ sim.updated_on.strftime("%d.%m.%Y") }}</td>
                 </tr>
+            </table>
+
+            <h4>Setup</h4>
+            <table id="setup-table" class="table">
+                <tr>
+                    <td>Type</td>
+                    <td>{{ sim.sim_type }}</td>
+                </tr>
+                <tr>
+                    <td>Number of atoms</td>
+                    <td>{{ sim.n_atoms }}</td>
+                </tr>
+                <tr>
+                    <td>Time step</td>
+                    <td>{{ sim.time_step }} ps</td>
+                </tr>
+                <tr>
+                    <td>Number of steps</td>
+                    <td>{{ sim.n_steps }}</td>
+                </tr>
+                <tr>
+                    <td>Duration</td>
+                    <td>{{ sim.time_step*sim.n_steps }} ps</td>
+                </tr>
+            </table>
+
+            <h4>Keywords</h4>
+            <table id="keyword-table" class="table">
+            {%- for keyword in sim.keywords %}
+                <tr>
+                    <td>{{ keyword.name }}</td>
+                    <td>{{ keyword.value }}</td>
+                </tr>
+            {%- endfor %}
+            </table>
+
+            {%- for meta_group in sim.meta %}
+            <h4>{{ meta_group.name }}</h4>
+            <table class="table meta_group_table">
+                {%- for meta_entry in meta_group.entries %}
+                    <tr>
+                        <td>{{ meta_entry.name }}</td>
+                        <td>{{ meta_entry.value }}</td>
+                    </tr>
+                {%- endfor %}
+            </table>
+            {%- endfor %}
+
         </div>
     </div>
 {% endblock %}

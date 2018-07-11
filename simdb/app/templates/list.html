@@ -9,22 +9,20 @@
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Owner</th>
+                        <th>Created on</th>
+                        <th>Added on</th>
                         <th>Last update</th>
-                        {%- for k in keywords %}
-                        <th>{{ k[0] }}</th>
-                        {%- endfor %}
+                        <th>Description</th>
                     </tr>
                 </thead>
                 <tbody>
                 {%- for sim in sims %}
                     <tr id="{{ sim.entry_id}}" class="entry">
                         <td class="entry_id"><a href="{{ sim.entry_id }}/">{{ sim.entry_id }}</td>
-                        <td class="owner">{{ sim.owner }}</td>
-                        <td class="updated">{{ sim.updated_on.strftime("%d.%m.%Y") }}</td>
-                        {%- for k in keywords %}
-                        <td>{{ sim.keywords.filter_by(name = k[0]).first().value }}</td>
-                        {%- endfor %}
+                        <td class="created_on">{% if sim.created_on != None %} {{ sim.created_on.strftime("%Y/%m/%d") }} {% endif %}</td>
+                        <td class="added_on">{{ sim.added_on.strftime("%Y/%m/%d") }}</td>
+                        <td class="created_on">{{ sim.updated_on.strftime("%Y/%m/%d") }}</td>
+                        <td class="description">{{ sim.description }}</td>
                     </tr>
                 {%- endfor %}
                 </tbody>
