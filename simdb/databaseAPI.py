@@ -88,3 +88,111 @@ def selectByTag(table, tag):
     split = table.tags.str.split(",")
     mask = [True if np.any(np.array(i[1]) == tag) else False for i in split.iteritems()]
     return pd.Series(mask, index=range(1, len(mask) + 1))
+
+def store_dict(entry_id,
+               path,
+               id = None,
+               owner = None,
+               url = None,
+               sim_type = None,
+               description = None,
+               created_on = None,
+               # added_on = None,
+               n_atoms = None,
+               n_steps = None,
+               time_step = None,
+               raw_keywords = {},
+               raw_mdp_parameters = {},
+               **kwargs
+              ):
+    """
+    Function to get a simulation object with all features.
+    The function will automatically sort if the keywords belong in the right table and create the necessary
+    other database objects (`Keywords`, `MetaGroups`, `MetaEntry`)
+
+    Parameters
+    ----------
+    entry_id : str
+        unique entry id
+    path : str
+        path to the simulation
+    id : int, None, optional
+        database ID
+    owner : str, None, optional
+        owner of the simulation
+    url : str, None, optional
+        url pointing to more informations about the simulation
+    sim_type : str, None, optional
+        simulation type
+    description : str, None, optional
+        detail description of the simulation
+    created_on : datetime, None, optional
+        Datetime object (use `datetime.fromtimestamp(UNIXSTRING)`)
+    n_atoms : int, None, optional
+        total number of atoms in the system
+    n_steps : int, None, optional
+        number of simulation steps
+    time_step : float, None, optional
+        used timestep (in [ps])
+    raw_keywords : dict, optional
+        Dictionary of `(keyword, value)` that should be added as keywords
+    raw_mdp_parameters : dict, optional
+        Dictionary of mdp parameters as named in the database.
+        If the `value` of `(keyword, value)` is a dictionary.
+        The `value`-dictionary with be added in `MetaGroups` with `name = keyword`
+        and all `(k, v)` of `value` assigned as `MetaEntry`.
+    kwargs : dict
+        Other kwargs.
+        Mainly interesting to provide lists of database models for
+        `keywords`, `meta` , `groups`, `children`, `parents`
+
+    Returns
+    -------
+    Main
+        returns a simulation object with all values assigned.
+    """
+
+    input_kwargs = locals()
+    _main_kwargs = [i for i in vars(Main).keys() if not i.startswith("_")]
+    
+    main_kwargs = dict( (k,v) for k,v in input_kwargs.iteritems() if k in _main_kwargs and v is not None)
+    # update main by mdp parameters
+    for k in raw_mdp_parameters.keys()[:]:
+        if k in _main_kwargs:
+            main_kwargs[k] = raw_mdp_parameters[k]
+            del raw_mdp_parameters[k]
+    
+    # update main by mdp_parameters
+    for k in raw_keywords.keys()[:]:
+        if k in _main_kwargs:
+            main_kwargs[k] = raw_keywords[k]
+            del raw_keywords[k]
+    
+    keywords = [] if not 'keywords' in kwargs or kwargs['keywords'] is None else  kwargs['keywords']
+    keywords.extend([Keywords(name=k,value=v) for k,v in raw_keywords.iteritems()])
+    
+    # update keywords
+    if len(keywords) != 0:
+        main_kwargs['keywords'] = keywords 
+    
+
+    metagroups = [] if not 'meta' in kwargs or kwargs['meta'] is None else kwargs['meta']
+    
+    for key in raw_mdp_parameters.keys()[:]:
+        value = raw_mdp_parameters[key]
+        if type(value) == dict:
+            metagroups.append(
+                MetaGroups(
+                    name=key,
+                    entries=[MetaEntry(name=k,value=v) for k,v in value.iteritems()],
+                          )
+            )
+    
+    # update meta
+    if len(metagroups) != 0:
+        main_kwargs['meta'] = metagroups 
+        
+    # create sim
+    sim = Main(**main_kwargs)
+    
+    return sim
