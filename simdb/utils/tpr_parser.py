@@ -125,12 +125,12 @@ def map_gromacs_to_database(keywords):
     rv = dict()
     if 'pcoupl' in keywords.keys():
         if compare_caseinsensitve(keywords['pcoupl'], 'Berendsen'):
-            rv['barostat_type'] = 'Berendsen'
+            rv['type'] = 'Berendsen'
         elif compare_caseinsensitve(keywords['pcoupl'], 'Parrinello-Rahman'):
-            rv['barostat_type'] = 'Parrinello-Rahman'
+            rv['type'] = 'Parrinello-Rahman'
         elif compare_caseinsensitve(keywords['pcoupl'], 'MTTK'):
-            rv['barostat_type'] = 'Parrinello-Rahman'
-            rv['p_MKT'] = True
+            rv['type'] = 'Parrinello-Rahman'
+            rv['MKT'] = True
 
         if keywords['pcoupl'] != 'no':
             # barostat coupling
@@ -148,34 +148,34 @@ def map_gromacs_to_database(keywords):
                 n_p = 33
 
             # general informations about the barostat
-            rv['p_relax'] = keywords['tau-p']
+            rv['p_rel'] = keywords['tau-p']
             rv['p_target'] = " ".join(keywords['ref-p'].split()[:n_p])
             rv['p_compressibility'] = " ".join(keywords['compressibility'].split()[:n_p])
-    master_dict['thermostat'] = rv
+    master_dict['barostat'] = rv
     
     # mapping thermostat
     rv = dict()
     if 'tcoupl' in keywords.keys():
         if compare_caseinsensitve(keywords['tcoupl'], 'berendsen'):
-            rv['thermostat_type'] = 'Berendsen'
+            rv['type'] = 'Berendsen'
         elif compare_caseinsensitve(keywords['tcoupl'], 'nose-hoover'):
-            rv['thermostat_type'] = 'Nose-Hoover'
-            rv['T_nh_chain'] = keywords['nh-chain-length']
+            rv['type'] = 'Nose-Hoover'
+            rv['tchain'] = keywords['nh-chain-length']
         elif compare_caseinsensitve(keywords['tcoupl'], 'andersen'):
-            rv['thermostat_type'] = 'Andersen'
+            rv['type'] = 'Andersen'
         elif compare_caseinsensitve(keywords['tcoupl'], 'andersen-massive'):
-            rv['thermostat_type'] = 'Andersen-massive'
+            rv['type'] = 'Andersen-massive'
         elif compare_caseinsensitve(keywords['tcoupl'], 'v-rescale'):
-            rv['thermostat_type'] = 'v-rescale'
+            rv['type'] = 'v-rescale'
 
         if keywords['tcoupl'] != 'no':
             t_relax = list(set(keywords['tau-t'].split()))
             assert len(t_relax) == 1, 'Not implemented different groups'
-            rv['T_relax'] = t_relax[0]
+            rv['T_rel'] = t_relax[0]
             t_target = list(set(keywords['ref-t'].split()))
             assert len(t_target) == 1, 'Not implemented different groups'
             rv['T_target'] = t_target[0]
-    master_dict['barostat'] = rv
+    master_dict['thermostat'] = rv
     
     return master_dict
 
