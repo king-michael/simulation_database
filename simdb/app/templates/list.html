@@ -2,8 +2,24 @@
 {% from 'macros.html' import icon %}
 {% block content %}
     <div class="row">
+
+            {% if databases|count > 0 %}
+            Please select DB:
+            <form action="/view/" method="POST">
+                <select onchange="this.form.submit()" name="path">
+                    <option value="db/empty.db">select path ...</option>
+                    {%- for db in databases %}
+                        <option value="{{ db.path }}">{{ db.path }}</option>
+                    {%- endfor %}
+                </select>
+            </form>
+            {% else %}
+            <p>No entries found</h3>
+            {% endif %}
+
         <div class="col-md-9">
-            {% if sims|count > 0 %}
+        {{ table|safe }}
+            <!--{% if sims|count > 0 %}
             <h3 class="lead">Entries</h3>
             <table id="qs_table" class="table sortable">
                 <thead>
@@ -29,7 +45,7 @@
             </table>
             {% else %}
             <h3 class=lead>No entries found</h3>
-            {% endif %}
+            {% endif %}-->
         </div>
     </div>
 {% endblock %}

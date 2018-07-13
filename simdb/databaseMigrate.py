@@ -1,6 +1,25 @@
+"""
+# Details:
+#   Migration Tool
+#   Usage:
+#       python databaseMigrate.py db init
+# Authors:
+#   Andrej Berg
+#   Michael King
+# History:
+#   -
+# Last modified: 12.07.2018
+# ToDo:
+#   -
+# Bugs:
+#   -
+"""
+
+__author__ = ["Andrej Berg", "Michael King"]
+__date__ = "17.04.2018"
+
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
 

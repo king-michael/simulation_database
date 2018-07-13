@@ -5,6 +5,7 @@
 #   Used to access database more easily.
 # Authors:
 #   Andrej Berg
+#   Michael King
 # History:
 #   -
 # Last modified: 17.04.2018
@@ -14,7 +15,7 @@
 #   -
 """
 
-__author__ = ["Andrej Berg"]
+__author__ = ["Andrej Berg", "Michael King"]
 __date__ = "17.04.2018"
 
 import pandas as pd
