@@ -9,6 +9,7 @@ logging.basicConfig(level=logging.DEBUG)
 import sys
 import os
 sys.path.append("../../..")
+sys.path.append("../../../..")
 
 # from labjournal.utils import *
 from simdb.databaseModel import *
@@ -68,7 +69,7 @@ if DUPLICATES:
     exit()
 
 logger.info('create_database:create_database: Create the Database')
-db = 'tmp_database.db'
+db = 'tmp_database_raw.db'
 try:
     os.remove(db)
     logger.info('create_database:create_database: removed old file: %s', db)

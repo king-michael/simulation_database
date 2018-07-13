@@ -10,6 +10,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 import sys
 sys.path.append("../../..")
+sys.path.append("../../../..")
 
 from simdb.databaseModel import *
 
