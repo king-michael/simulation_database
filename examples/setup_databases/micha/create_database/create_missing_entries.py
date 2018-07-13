@@ -9,12 +9,20 @@ logger = logging.getLogger('SetupDatabase')
 logging.basicConfig(level=logging.DEBUG)
 
 import sys
+import os
 sys.path.append("../../..")
 sys.path.append("../../../..")
 
 from simdb.databaseModel import *
 
 from shutil import copy2
+
+if 'OWNER' in os.environ:
+  OWNER = os.environ['OWNER']
+else:
+  OWNER = ""
+logger.info('create_database:create_missing_entries: set OWNER = %s', OWNER)
+
 logger.info('create_database:create_missing_entries: copy %s --> %s', db_raw, db)
 copy2(db_raw,db)
 
@@ -35,11 +43,12 @@ for sim_id in SIM_ID_MAIN_ALL:
     if sim_id not in SIM_ID_PARENTS:
         logger.info('create_database:create_missing_entries: add sim_id : %s', sim_id)
         sim = Main(
-           entry_id=sim_id,
-           url=sim_id,
-           path='',
-           description='',
-           sim_type="MISSING ENTRY",
+           entry_id = sim_id,
+           url = sim_id,
+           path = '',
+           owner = OWNER,
+           description = '',
+           sim_type = "MISSING ENTRY",
         )
         session.add(sim)
 session.commit()

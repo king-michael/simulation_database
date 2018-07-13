@@ -21,6 +21,12 @@ kwargs_fileFinder = dict(
     path='/home/micha/SIM-PhD-King',
     dir_ignore=['OLD', 'old', 'Old', 'TMP', 'tmp', 'rm', 'templates', 'testcase'])
 
+if 'OWNER' in os.environ:
+  OWNER = os.environ['OWNER']
+else:
+  OWNER = ""
+logger.info('create_database:create_missing_entries: set OWNER = %s', OWNER)
+
 fileHandler = FileHandler()
 SIM_IDS=[]
 PATHS=[]
@@ -82,10 +88,11 @@ session = Session()
 setup_database(engine)
 for data in DATAS:
     sim = Main(
-       entry_id=data['ID'],
-       url=data['MEDIAWIKI'],
-       path=data['path'],
-       description=data['INFO'] if 'INFO' in data.keys() else ""
+       entry_id = data['ID'],
+       url = data['MEDIAWIKI'],
+       owner = OWNER,
+       path = data['path'],
+       description = data['INFO'] if 'INFO' in data.keys() else ""
     )
     session.add(sim)
 session.commit()

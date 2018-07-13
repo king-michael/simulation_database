@@ -6,10 +6,14 @@ Whole workflow:
 """
 
 db_final = "micha.db"
+owner = "micha"
+
 import logging
 logger = logging.getLogger('SetupDatabase')
 logging.basicConfig(level=logging.DEBUG)
 
+import os
+os.environ['OWNER'] = owner
 
 from create_database import *
 
