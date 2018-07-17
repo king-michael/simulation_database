@@ -22,5 +22,7 @@ setup(
         'SQLAlchemy',
         'flask',
         'Flask-SQLAlchemy',
+        'pandas>=0.21',
+        'numpy'
     ]
 )
