@@ -33,13 +33,14 @@ def list_all():
         pass
     if path != "" and os.path.exists(path):
         table = getEntryTable(path)
+        table["entry_id"] = table["entry_id"].apply(lambda x: '<a href="/{0}/">{0}</a>'.format(x))
     else:
         table = pd.DataFrame()
     return render_template(
         'list.html',
         path=path,
         databases = db.session.query(DBPath).all(),
-        table      = table.to_html(classes="table sortable")
+        table      = table.to_html(classes="table sortable", escape=False)
     )
 
 #
