@@ -71,12 +71,22 @@ def getEntryTable(db_path):
                                                                                       columns={"name": "tags"})
     s.close()
 
-    # inner join to get the connection between entries and keywords
-    m = pd.merge(main, keywords, left_on='id', right_on="main_id", how="inner")
-    # pivot table reduces it to columns
-    p = m.pivot(index='id_x', columns='name')["value"]
-    # DataFrame where one can search by keyword and tags
-    main_out = pd.concat([main.set_index('id'), p, tags], axis=1)
+    # init main_out
+    main_out = main.set_index('id')
+
+    # check if we have keywords
+    if keywords.size != 0:
+        # inner join to get the connection between entries and keywords
+        m = pd.merge(main, keywords, left_on='id', right_on="main_id", how="inner")
+        # pivot table reduces it to columns
+        p = m.pivot(index='id_x', columns='name')["value"]
+        # DataFrame where one can search by keyword and tags
+        main_out = pd.concat([main_out, p], axis=1)
+
+    # check if we have tags
+    if tags.notna().size != 0:
+        main_out = pd.concat([main_out, tags], axis=1)
+
     return main_out
 
 def selectByKeyword(table, name, value):
