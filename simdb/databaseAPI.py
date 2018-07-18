@@ -67,16 +67,18 @@ def getEntryTable(db_path, columns=["entry_id", "path", "created_on", "added_on"
 
     if load_keys:
         keywords = keywords_raw[keywords_raw['value'].notna()]
-        # inner join to get the connection between entries and keywords
-        #m = pd.merge(main, keywords, right_on="main_id", how="inner")
-        # pivot table reduces it to columns
-        p = keywords.pivot(index='main_id', columns='name')["value"]
-        main = pd.concat([main, p], axis=1)
+        if keywords.size != 0:
+            # inner join to get the connection between entries and keywords
+            #m = pd.merge(main, keywords, right_on="main_id", how="inner")
+            # pivot table reduces it to columns
+            p = keywords.pivot(index='main_id', columns='name')["value"]
+            main = pd.concat([main, p], axis=1)
 
     if load_tags:
         tags = keywords_raw[~keywords_raw['value'].notna()]
-        tags = tags.drop('value', axis=1).groupby("main_id").agg({"name": listed}).rename(index=int, columns={"name": "tags"})
-        main = pd.concat([main, tags], axis=1)
+        if tags.notna().size != 0:
+            tags = tags.drop('value', axis=1).groupby("main_id").agg({"name": listed}).rename(index=int, columns={"name": "tags"})
+            main = pd.concat([main, tags], axis=1)
 
     s.close()
 
@@ -120,6 +122,7 @@ def getEntryMeta(db_path, entry_id):
 
     s.close()
     return out
+
 
 
 def selectByKeyword(table, name, value):
