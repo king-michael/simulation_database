@@ -3,39 +3,39 @@
 {% block content %}
     <div class="row">
         <div class="col-md-9">
-            <h3 class="lead">{{ sim.entry_id}}</h3>
+            <h3 class="lead">{{ sim["entry_id"]}}</h3>
             <table id="enty-table" class="table">
                <tr>
                     <td>Owner</td>
-                    <td>{{ sim.owner }}</td>
+                    <td>{{ sim["owner"] }}</td>
                 </tr>
                 <tr>
                     <td>Url</td>
-                    <td>{{ sim.url }}</td>
+                    <td>{{ sim["url"] }}</td>
                 </tr>
                 <tr>
                     <td>Path</td>
-                    <td>{{ sim.path }}</td>
+                    <td>{{ sim["path"] }}</td>
                 </tr>
                 <tr>
                     <td>Description</td>
-                    <td>{{ sim.description }}</td>
+                    <td>{{ sim["description"] }}</td>
                 </tr>
                 <tr>
                     <td>Created</td>
-                    <td>{% if sim.created_on != None %} {{ sim.created_on.strftime("%d.%m.%Y") }} {% endif %}</td>
+                    <td>{% if sim["created_on"] != None %}  {{ sim["created_on"].strftime("%d.%m.%Y") }} {% endif %}</td>
                 </tr>
                 <tr>
                     <td>Added</td>
-                    <td>{{ sim.added_on.strftime("%d.%m.%Y") }}</td>
+                    <td>{% if sim["added_on"] != None %}  {{ sim["added_on"].strftime("%d.%m.%Y") }} {% endif %}</td>
                 </tr>
                 <tr>
                     <td>Last update</td>
-                    <td>{{ sim.updated_on.strftime("%d.%m.%Y") }}</td>
+                    <td>{% if sim["updated_on"] != None %}  {{ sim["updated_on"].strftime("%d.%m.%Y") }} {% endif %}</td>
                 </tr>
             </table>
 
-            <h4>Setup</h4>
+            <!--<h4>Setup</h4>
             <table id="setup-table" class="table">
                 <tr>
                     <td>Type</td>
@@ -79,7 +79,7 @@
                     </tr>
                 {%- endfor %}
             </table>
-            {%- endfor %}
+            {%- endfor %}-->
 
         </div>
     </div>
