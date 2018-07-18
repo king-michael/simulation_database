@@ -56,38 +56,74 @@ def getKeywords(db_path):
     s.close()
     return key_dict
 
-def getEntryTable(db_path):
+def getEntryTable(db_path, columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"], load_keys=True, load_tags=True):
     '''Get a pandas DataFrame with all entries in a data base and
     keywords and tags.'''
     s = openDatabase(db_path)
 
     # get DB tables as pandas DataFrames
-    main = pd.read_sql_table("main", s.bind)[["id", "entry_id", "path"]]
+    main = pd.read_sql_table("main", s.bind)[["id"] + columns].set_index('id')
     keywords_raw = pd.read_sql_table("keywords", s.bind)
-    keywords = keywords_raw[keywords_raw['value'].notna()]
 
-    tags = keywords_raw[~keywords_raw['value'].notna()]
-    tags = tags.drop('value', axis=1).groupby("main_id").agg({"name": listed}).rename(index=int,
-                                                                                      columns={"name": "tags"})
+    if load_keys:
+        keywords = keywords_raw[keywords_raw['value'].notna()]
+        if keywords.size != 0:
+            # inner join to get the connection between entries and keywords
+            #m = pd.merge(main, keywords, right_on="main_id", how="inner")
+            # pivot table reduces it to columns
+            p = keywords.pivot(index='main_id', columns='name')["value"]
+            main = pd.concat([main, p], axis=1)
+
+    if load_tags:
+        tags = keywords_raw[~keywords_raw['value'].notna()]
+        if tags.notna().size != 0:
+            tags = tags.drop('value', axis=1).groupby("main_id").agg({"name": listed}).rename(index=int, columns={"name": "tags"})
+            main = pd.concat([main, tags], axis=1)
+
     s.close()
 
-    # init main_out
-    main_out = main.set_index('id')
+    return main
 
-    # check if we have keywords
-    if keywords.size != 0:
-        # inner join to get the connection between entries and keywords
-        m = pd.merge(main, keywords, left_on='id', right_on="main_id", how="inner")
-        # pivot table reduces it to columns
-        p = m.pivot(index='id_x', columns='name')["value"]
-        # DataFrame where one can search by keyword and tags
-        main_out = pd.concat([main_out, p], axis=1)
 
-    # check if we have tags
-    if tags.notna().size != 0:
-        main_out = pd.concat([main_out, tags], axis=1)
+def getEntryDetails(db_path, entry_id):
+    s = openDatabase(db_path)
 
-    return main_out
+    sim = s.query(Main).filter(Main.entry_id == entry_id).one()
+    d = sim.__dict__
+    try:
+        del d["_sa_instance_state"]
+    except:
+        pass
+    out = sim.__dict__
+
+    s.close()
+    return out
+
+
+def getEntryKeywords(db_path, entry_id):
+    s = openDatabase(db_path)
+
+    sim = s.query(Main).filter(Main.entry_id == entry_id).one()
+    keywords = sim.keywords.all()
+    keywords = {k.name: k.value for k in keywords if k.value != None}
+
+    s.close()
+    return keywords
+
+
+def getEntryMeta(db_path, entry_id):
+    s = openDatabase(db_path)
+
+    sim = s.query(Main).filter(Main.entry_id == entry_id).one()
+
+    out = {}
+    for meta_group in sim.meta.all():
+        out[meta_group.name] = {meta.name: meta.value for meta in meta_group.entries.all()}
+
+    s.close()
+    return out
+
+
 
 def selectByKeyword(table, name, value):
     '''Get mask for selection of entries by keyword.'''

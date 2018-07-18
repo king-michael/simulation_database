@@ -5,7 +5,7 @@ from flask import render_template, request, redirect, flash,url_for
 from databaseViewer import app
 from app import db
 from app.databaseModelApp import DBPath
-from databaseAPI import getEntryTable
+from databaseAPI import getEntryTable, getEntryDetails, getEntryKeywords, getEntryMeta
 import pandas as pd
 
 @app.route('/', methods=['POST', 'GET'])
@@ -32,8 +32,9 @@ def list_all():
     except:
         pass
     if path != "" and os.path.exists(path):
-        table = getEntryTable(path)
-        table["entry_id"] = table["entry_id"].apply(lambda x: '<a href="/{0}/">{0}</a>'.format(x))
+        table = getEntryTable(path, columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"], load_keys=False, load_tags=False)
+        db_id = db.session.query(DBPath).filter(DBPath.path == path).one().id
+        table["entry_id"] = table["entry_id"].apply(lambda x: '<a href="/{1}/{0}/">{0}</a>'.format(x, db_id))
     else:
         table = pd.DataFrame()
     return render_template(
@@ -43,10 +44,11 @@ def list_all():
         table      = table.to_html(classes="table sortable", escape=False)
     )
 
-#
-# @app.route('/<entry_id>/')
-# def detail(entry_id):
-#     return render_template(
-#         'details.html',
-#         sim = db.session.query(Main).filter(Main.entry_id == entry_id).one()
-#     )
+
+@app.route('/<db_id>/<entry_id>/', methods=['POST', 'GET'])
+def detail(db_id, entry_id):
+    path = db.session.query(DBPath).filter(DBPath.id == db_id).one().path
+    return render_template(
+        'details.html',
+        sim = getEntryDetails(path, entry_id)
+    )
