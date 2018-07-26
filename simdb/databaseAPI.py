@@ -22,7 +22,7 @@ import pandas as pd
 import numpy as np
 import os
 
-from databaseModel import *
+from .databaseModel import *
 
 
 def listed(alist):
