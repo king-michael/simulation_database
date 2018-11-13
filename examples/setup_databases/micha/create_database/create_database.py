@@ -19,7 +19,7 @@ from fileHandler import FileHandler
 kwargs_fileFinder = dict(
     pattern='_info_',
     path='/home/micha/SIM-PhD-King',
-    dir_ignore=['OLD', 'old', 'Old', 'TMP', 'tmp', 'rm', 'templates', 'testcase'])
+    dir_ignore=['OLD', 'old', 'Old', 'TMP', 'tmp', 'rm', 'template', 'testcase', 'input_files'])
 
 if 'OWNER' in os.environ:
   OWNER = os.environ['OWNER']
