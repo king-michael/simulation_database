@@ -2,26 +2,50 @@
 {% from 'macros.html' import icon %}
 {% block content %}
     <div class="row">
+
+            {% if databases|count > 0 %}
+            Please select DB:
+            <form action="/view/" method="POST">
+                <select onchange="this.form.submit()" name="path">
+                    <option value="db/empty.db">select path ...</option>
+                    {%- for db in databases %}
+                        <option value="{{ db.path }}">{{ db.path }}</option>
+                    {%- endfor %}
+                </select>
+            </form>
+            {% else %}
+            <p>No entries found</h3>
+            {% endif %}
+
         <div class="col-md-9">
-            {% if sims|count > 0 %}
+        {{ table|safe }}
+            <!--{% if sims|count > 0 %}
             <h3 class="lead">Entries</h3>
-            <table id="enty-table" class="table">
-               <tr>
-                    <th>ID</th>
-                    <th>Path</th>
-                    <th>Last update</th>
-                </tr>
+            <table id="qs_table" class="table sortable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Created on</th>
+                        <th>Added on</th>
+                        <th>Last update</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
                 {%- for sim in sims %}
-                    <tr >
-                        <td><a href="{{ sim.entry_id }}/">{{ sim.entry_id }}</td>
-                        <td>{{ sim.path }}</td>
-                        <td>{{ sim.updated_on }}</td>
+                    <tr id="{{ sim.entry_id}}" class="entry">
+                        <td class="entry_id"><a href="{{ sim.entry_id }}/">{{ sim.entry_id }}</td>
+                        <td class="created_on">{% if sim.created_on != None %} {{ sim.created_on.strftime("%Y/%m/%d") }} {% endif %}</td>
+                        <td class="added_on">{{ sim.added_on.strftime("%Y/%m/%d") }}</td>
+                        <td class="created_on">{{ sim.updated_on.strftime("%Y/%m/%d") }}</td>
+                        <td class="description">{{ sim.description }}</td>
                     </tr>
                 {%- endfor %}
+                </tbody>
             </table>
             {% else %}
             <h3 class=lead>No entries found</h3>
-            {% endif %}
+            {% endif %}-->
         </div>
     </div>
 {% endblock %}

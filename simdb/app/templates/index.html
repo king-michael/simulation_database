@@ -1,0 +1,36 @@
+{% extends 'layout.html' %}
+{% from 'macros.html' import icon %}
+{% block content %}
+    <div class="row">
+        <form action="/" method="POST">
+          Please select DB:
+            <label>Path</label>
+            <input name="path" value="">
+            <label>Comment</label>
+            <input name="comment" value="">
+          <input type="submit" value="Submit">
+        </form>
+        <div class="col-md-9">
+            <h3 class="lead">Databases</h3>
+            {% if databases|count > 0 %}
+            <table id="qs_table" class="table sortable">
+                <thead>
+                    <tr>
+                        <th>Path</th>
+                        <th>Comment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {%- for db in databases %}
+                    <tr id="{{ db.id}}" class="entry">
+                        <td class="path">{{ db.path }}</td>
+                        <td class="comment">{{ db.comment }}</td>
+                    </tr>
+                {%- endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <h3 class=lead>No entries found</h3>
+            {% endif %}
+    </div>
+{% endblock %}

@@ -1,0 +1,121 @@
+LAMMPS (20 Apr 2018)
+# 3d Lennard-Jones melt
+
+variable	x index 1
+variable	y index 1
+variable	z index 1
+
+variable	xx equal 20*$x
+variable	xx equal 20*1
+variable	yy equal 20*$y
+variable	yy equal 20*1
+variable	zz equal 20*$z
+variable	zz equal 20*1
+
+units		lj
+atom_style	atomic
+
+lattice		fcc 0.8442
+Lattice spacing in x,y,z = 1.6796 1.6796 1.6796
+region		box block 0 ${xx} 0 ${yy} 0 ${zz}
+region		box block 0 20 0 ${yy} 0 ${zz}
+region		box block 0 20 0 20 0 ${zz}
+region		box block 0 20 0 20 0 20
+create_box	1 box
+Created orthogonal box = (0 0 0) to (33.5919 33.5919 33.5919)
+  1 by 2 by 2 MPI processor grid
+create_atoms	1 box
+Created 32000 atoms
+  Time spent = 0.00121093 secs
+mass		1 1.0
+
+velocity	all create 1.44 87287 loop geom
+
+pair_style	lj/cut 2.5
+pair_coeff	1 1 1.0 1.0 2.5
+
+neighbor	0.3 bin
+neigh_modify	delay 0 every 20 check no
+
+#fix		1 all nve
+fix 1 all nvt temp 1 1 1
+
+run		100
+Neighbor list info ...
+  update every 20 steps, delay 0 steps, check no
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 2.8
+  ghost atom cutoff = 2.8
+  binsize = 1.4, bins = 24 24 24
+  1 neighbor lists, perpetual/occasional/extra = 1 0 0
+  (1) pair lj/cut, perpetual
+      attributes: half, newton on
+      pair build: half/bin/atomonly/newton
+      stencil: half/bin/3d/newton
+      bin: standard
+Per MPI rank memory allocation (min/avg/max) = 5.88 | 5.88 | 5.88 Mbytes
+Step Temp E_pair E_mol TotEng Press 
+       0         1.44   -6.7733681            0   -4.6134356   -5.0197073 
+     100   0.76480961   -5.7520068            0   -4.6048283   0.24588689 
+Loop time of 0.803059 on 4 procs for 100 steps with 32000 atoms
+
+Performance: 53794.305 tau/day, 124.524 timesteps/s
+100.1% CPU use with 4 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 0.41833    | 0.54082    | 0.66688    |  16.6 | 67.34
+Neigh   | 0.055767   | 0.067601   | 0.079797   |   4.5 |  8.42
+Comm    | 0.025103   | 0.16695    | 0.30524    |  33.6 | 20.79
+Output  | 5.4121e-05 | 6.3539e-05 | 7.7009e-05 |   0.0 |  0.01
+Modify  | 0.019829   | 0.022765   | 0.025558   |   1.8 |  2.83
+Other   |            | 0.004861   |            |       |  0.61
+
+Nlocal:    8000 ave 8037 max 7965 min
+Histogram: 2 0 0 0 0 0 0 0 1 1
+Nghost:    9007.25 ave 9051 max 8967 min
+Histogram: 1 1 0 0 0 0 0 1 0 1
+Neighs:    300712 ave 305140 max 297174 min
+Histogram: 1 0 0 1 1 0 0 0 0 1
+
+Total # of neighbors = 1202848
+Ave neighs/atom = 37.589
+Neighbor list builds = 5
+Dangerous builds not checked
+
+unfix 1
+fix 1 all npt temp 1 1 1 iso 1 1 10
+
+run 100
+Per MPI rank memory allocation (min/avg/max) = 5.882 | 5.882 | 5.882 Mbytes
+Step Temp E_pair E_mol TotEng Press Volume 
+     100   0.76480961   -5.7520068            0   -4.6048283   0.24588689     37905.71 
+     200   0.78387362   -5.7510849            0   -4.5753112   0.41152941    37784.931 
+Loop time of 0.84404 on 4 procs for 100 steps with 32000 atoms
+
+Performance: 51182.410 tau/day, 118.478 timesteps/s
+100.0% CPU use with 4 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 0.43036    | 0.55757    | 0.68582    |  16.5 | 66.06
+Neigh   | 0.055238   | 0.067135   | 0.079537   |   4.6 |  7.95
+Comm    | 0.024212   | 0.17062    | 0.3157     |  34.1 | 20.21
+Output  | 5.3883e-05 | 6.3419e-05 | 7.7009e-05 |   0.0 |  0.01
+Modify  | 0.038272   | 0.043575   | 0.048951   |   2.4 |  5.16
+Other   |            | 0.005081   |            |       |  0.60
+
+Nlocal:    8000 ave 8049 max 7943 min
+Histogram: 1 0 1 0 0 0 0 0 0 2
+Nghost:    8962.75 ave 9001 max 8922 min
+Histogram: 1 0 1 0 0 0 0 0 1 1
+Neighs:    300863 ave 305805 max 296145 min
+Histogram: 1 0 0 0 1 1 0 0 0 1
+
+Total # of neighbors = 1203452
+Ave neighs/atom = 37.6079
+Neighbor list builds = 5
+Dangerous builds not checked
+Total wall time: 0:00:01

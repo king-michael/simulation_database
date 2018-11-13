@@ -173,6 +173,7 @@ class MetaEntry(Base):
             self.name,
             self.value)
 
+
 def establish_session(db_address='sqlite:///:memory:'):
     '''
     :param db_address: ['sqlite:///:memory:', 'sqlite:///./test.db']

@@ -3,40 +3,84 @@
 {% block content %}
     <div class="row">
         <div class="col-md-9">
-            <h3 class="lead">{{ sim.entry_id}}</h3>
+            <h3 class="lead">{{ sim["entry_id"]}}</h3>
             <table id="enty-table" class="table">
                <tr>
                     <td>Owner</td>
-                    <td>{{ sim.owner }}</td>
+                    <td>{{ sim["owner"] }}</td>
                 </tr>
                 <tr>
                     <td>Url</td>
-                    <td>{{ sim.url }}</td>
+                    <td>{{ sim["url"] }}</td>
                 </tr>
                 <tr>
                     <td>Path</td>
-                    <td>{{ sim.path }}</td>
+                    <td>{{ sim["path"] }}</td>
                 </tr>
+                <tr>
+                    <td>Description</td>
+                    <td>{{ sim["description"] }}</td>
+                </tr>
+                <tr>
+                    <td>Created</td>
+                    <td>{% if sim["created_on"] != None %}  {{ sim["created_on"].strftime("%d.%m.%Y") }} {% endif %}</td>
+                </tr>
+                <tr>
+                    <td>Added</td>
+                    <td>{% if sim["added_on"] != None %}  {{ sim["added_on"].strftime("%d.%m.%Y") }} {% endif %}</td>
+                </tr>
+                <tr>
+                    <td>Last update</td>
+                    <td>{% if sim["updated_on"] != None %}  {{ sim["updated_on"].strftime("%d.%m.%Y") }} {% endif %}</td>
+                </tr>
+            </table>
+
+            <!--<h4>Setup</h4>
+            <table id="setup-table" class="table">
                 <tr>
                     <td>Type</td>
                     <td>{{ sim.sim_type }}</td>
                 </tr>
                 <tr>
-                    <td>Description</td>
-                    <td>{{ sim.description }}</td>
+                    <td>Number of atoms</td>
+                    <td>{{ sim.n_atoms }}</td>
                 </tr>
                 <tr>
-                    <td>Created</td>
-                    <td>{{ sim.created_on }}</td>
+                    <td>Time step</td>
+                    <td>{{ sim.time_step }} ps</td>
                 </tr>
                 <tr>
-                    <td>Added</td>
-                    <td>{{ sim.added_on }}</td>
+                    <td>Number of steps</td>
+                    <td>{{ sim.n_steps }}</td>
                 </tr>
                 <tr>
-                    <td>Last update</td>
-                    <td>{{ sim.updated_on }}</td>
+                    <td>Duration</td>
+                    <td>{{ sim.time_step*sim.n_steps }} ps</td>
                 </tr>
+            </table>
+
+            <h4>Keywords</h4>
+            <table id="keyword-table" class="table">
+            {%- for keyword in sim.keywords %}
+                <tr>
+                    <td>{{ keyword.name }}</td>
+                    <td>{{ keyword.value }}</td>
+                </tr>
+            {%- endfor %}
+            </table>
+
+            {%- for meta_group in sim.meta %}
+            <h4>{{ meta_group.name }}</h4>
+            <table class="table meta_group_table">
+                {%- for meta_entry in meta_group.entries %}
+                    <tr>
+                        <td>{{ meta_entry.name }}</td>
+                        <td>{{ meta_entry.value }}</td>
+                    </tr>
+                {%- endfor %}
+            </table>
+            {%- endfor %}-->
+
         </div>
     </div>
 {% endblock %}
