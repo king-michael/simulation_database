@@ -3,18 +3,19 @@ Test the fileFinder
 """
 
 import logging
-logger = logging.getLogger('SetupDatabase')
-logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('SetupDatabase:create_database:create_database')
 
 import sys
 import os
+
+from fileHandler import FileHandler
+
 sys.path.append("../../..")
 sys.path.append("../../../..")
 
-# from labjournal.utils import *
 from simdb.databaseModel import *
 from simdb.utils.fileFinder import find_files
-from fileHandler import FileHandler
+
 
 kwargs_fileFinder = dict(
     pattern='_info_',
@@ -25,14 +26,14 @@ if 'OWNER' in os.environ:
   OWNER = os.environ['OWNER']
 else:
   OWNER = ""
-logger.info('create_database:create_missing_entries: set OWNER = %s', OWNER)
+logger.info('set OWNER = %s', OWNER)
 
 fileHandler = FileHandler()
 SIM_IDS=[]
 PATHS=[]
 DATAS=[]
 
-logger.info('create_database:create_database: FIND FILES')
+logger.info('FIND FILES')
 ERRORS=False
 WARNINGS=False
 for fname in find_files(**kwargs_fileFinder):
@@ -59,7 +60,7 @@ if ERRORS:
 if WARNINGS:
     exit()
 
-logger.info('create_database:create_database: CHECK FOR DUPLICATES IN sim_id')
+logger.info('CHECK FOR DUPLICATES IN sim_id')
 
 from collections import Counter
 sim_count=Counter(SIM_IDS)
@@ -74,11 +75,12 @@ for k,v in sim_count.iteritems():
 if DUPLICATES:
     exit()
 
-logger.info('create_database:create_database: Create the Database')
+logger.info('Create the Database')
 db = 'tmp_database_raw.db'
+logger.info('store in database : {}'.format(db))
 try:
     os.remove(db)
-    logger.info('create_database:create_database: removed old file: %s', db)
+    logger.info('removed old file: %s', db)
 except:
     pass
 engine = create_engine('sqlite:///{}'.format(db) , echo=False) #  if we want spam
@@ -97,4 +99,4 @@ for data in DATAS:
     session.add(sim)
 session.commit()
 session.close()
-logger.info('create_database:create_database: Created the database: %s', db)
+logger.info('Created the database: %s', db)

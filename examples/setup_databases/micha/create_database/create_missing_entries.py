@@ -5,8 +5,7 @@ db_raw = 'tmp_database_raw.db'
 db     = 'tmp_database_add_missing.db'
 
 import logging
-logger = logging.getLogger('SetupDatabase')
-logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('SetupDatabase:create_database:create_missing_entries')
 
 import sys
 import os
@@ -17,13 +16,18 @@ from simdb.databaseModel import *
 
 from shutil import copy2
 
+
+logger.info('Create missing entries')
+logger.info('use database : {}'.format(db_raw))
+logger.info('store in database : {}'.format(db))
+
 if 'OWNER' in os.environ:
   OWNER = os.environ['OWNER']
 else:
   OWNER = ""
-logger.info('create_database:create_missing_entries: set OWNER = %s', OWNER)
+logger.info('set OWNER = %s', OWNER)
 
-logger.info('create_database:create_missing_entries: copy %s --> %s', db_raw, db)
+logger.info('copy %s --> %s', db_raw, db)
 copy2(db_raw,db)
 
 session = establish_session('sqlite:///{}'.format(db))
@@ -37,11 +41,11 @@ LAST_ID_MAIN=SIM_ID_MAIN[-1]
 LAST_int=int(LAST_ID_MAIN[2:])
 SIM_ID_MAIN_ALL=["MK{:04d}".format(i) for i in range(1,LAST_int+1)]
 
-logger.info('create_database:create_missing_entries: add missing entries')
+logger.warn('add missing entries')
 
 for sim_id in SIM_ID_MAIN_ALL:
     if sim_id not in SIM_ID_PARENTS:
-        logger.info('create_database:create_missing_entries: add sim_id : %s', sim_id)
+        logger.info(' add sim_id : %s', sim_id)
         sim = Main(
            entry_id = sim_id,
            url = sim_id,
@@ -53,4 +57,4 @@ for sim_id in SIM_ID_MAIN_ALL:
         session.add(sim)
 session.commit()
 session.close()
-logger.info('create_database:create_database: Created the database: %s', db)
+logger.info('Created the database: %s', db)
