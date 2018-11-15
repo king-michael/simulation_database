@@ -281,7 +281,7 @@ def general_mapping(word, list_words):
     UserWarning
         if value in dict is not a ``Keyword`` or a list of ``Keyword``.
     """
-    return dict_mapping(word, list_words, list_general_maps)
+    return dict_mapping(word, list_words, dict_general_mapping)
 
 
 def generate_keywords(path):
@@ -301,7 +301,7 @@ def generate_keywords(path):
 
     """
 
-    list_keywords = map_word_folder(path.split(os.path.sep), list_folders)
+    list_keywords = map_word_folder(path.split(os.path.sep), structure_folders)
     dummy_dict = {}
     for keyword in list_keywords:
         dummy_dict[keyword.name] = keyword
@@ -411,7 +411,7 @@ def get_keywords_values(alist):
     Examples
     --------
     Show the possible keyword + values
-    >>> get_keywords_values(list_folders)
+    >>> get_keywords_values(structure_folders)
     """
     list_keywords = []
     # get Keywords
@@ -436,7 +436,7 @@ def get_possible_keywords():
     Show the unique list of possible keyword.
     >>> get_possible_keywords()
     """
-    return sorted(list(set([k for k, v in get_keywords_values(list_folders)])))
+    return sorted(list(set([k for k, v in get_keywords_values(structure_folders)])))
 
 
 def get_possible_combinations():
@@ -455,7 +455,7 @@ def get_possible_combinations():
     """
     # condense
     adict = dict()
-    for k, v in get_keywords_values(list_folders):
+    for k, v in get_keywords_values(structure_folders):
         if k in adict:
             adict[k] += v
         else:
@@ -536,7 +536,7 @@ def get_ubiquitin_keywords(word):
 # dictionaries used for mapping
 
 
-list_general_maps = OrderedDict([
+dict_general_mapping = OrderedDict([
     ('.*metaD.*', Keyword('MetaDynamic')),
     ('metaDynamic', Keyword('MetaDynamic')),
     ('.*_charmm.*', Keyword('force field', 'CHARMM36m')),
@@ -610,13 +610,13 @@ map_systems = OrderedDict([
 # The interessting part
 # mapping scheme for folders
 
-list_folders = []
+structure_folders = []
 
 # =====================================================================================#
 # methods
 # =====================================================================================#
 
-list_folders.append(
+structure_folders.append(
     Struc('methods',
           [Keyword('method development')],
           subfolders=[
@@ -642,7 +642,7 @@ list_folders.append(
 # builds
 # =====================================================================================#
 
-list_folders.append(
+structure_folders.append(
     Struc('builds',
           [Keyword('system builds')],
           subfolders=[
@@ -676,7 +676,7 @@ list_folders.append(
 # polyacrylacid
 # =====================================================================================#
 
-list_folders.append(
+structure_folders.append(
     Struc('polyacrylacid', [Keyword('polyacrylic acid')],
           subfolders=[
               Struc('propaneacid_mono_inaqua',
@@ -695,7 +695,7 @@ list_folders.append(
 # Structuredata
 # =====================================================================================#
 
-list_folders.append(
+structure_folders.append(
     Struc('Structuredata',
           subfolders=[
               Struc(".*",
@@ -721,7 +721,7 @@ list_folders.append(
 # Testsystems
 # =====================================================================================#
 
-list_folders.append(
+structure_folders.append(
     Struc('Testsystems', [Keyword('test system')],
           subfolders=[
               Struc('methods', [Keyword('test method')],
@@ -740,7 +740,7 @@ list_folders.append(
 # tutorials
 # =====================================================================================#
 
-list_folders.append(
+structure_folders.append(
     Struc('tutorials', [Keyword('tutorial')],
           subfolders=[
               Struc('python', [Keyword('PYTHON')])
@@ -752,7 +752,7 @@ list_folders.append(
 # cg_surfactants
 # =====================================================================================#
 
-list_folders.append(
+structure_folders.append(
     Struc('cg_surfactants', [Keyword('system', 'cg_surfactant')],
           mapping={'.*': partial(dict_mapping, adict=dict_polymorphs)}
           )
@@ -762,7 +762,7 @@ list_folders.append(
 # atomistic_caco3
 # =====================================================================================#
 
-list_folders.append(
+structure_folders.append(
     Struc('atomistic_caco3', [Keyword('system', 'CaCO3'),
                               Keyword('resolution', 'atomistic'),
                               Keyword('force field', 'Raiteri2015')],
@@ -879,7 +879,7 @@ list_folders.append(
 # toysystems
 # =====================================================================================#
 
-list_folders.append(
+structure_folders.append(
     Struc('toysystems', [Keyword('toystystem')],
           subfolders=[
               Struc('nanoparticle_decane', [Keyword('nanoparticle'),
@@ -901,7 +901,7 @@ list_folders.append(
 # ubiquitin
 # =====================================================================================#
 
-list_folders.append(
+structure_folders.append(
     Struc('ubiquitin', [Keyword('system', 'ubiquitin')],
           subfolders=[
               Struc('atomistic', [Keyword('resolution', 'atomistic')],
@@ -918,7 +918,7 @@ list_folders.append(
 # control_systems
 # =====================================================================================#
 
-list_folders.append(
+structure_folders.append(
     Struc('control_systems', [Keyword('control systems')],
           subfolders=[
               Struc('calcium_acetate_aq', [Keyword('system', 'calcium acetate'),
@@ -936,7 +936,7 @@ list_folders.append(
 # 2018_cg_model
 # =====================================================================================#
 
-list_folders.append(
+structure_folders.append(
     Struc('2018_cg_model', [Keyword('system', 'CaCO3'),
                             Keyword('resolution', 'coarse-grained')],
           subfolders=[
@@ -961,7 +961,7 @@ list_folders.append(
 # cg-model
 # =====================================================================================#
 
-list_folders.append(
+structure_folders.append(
     Struc('cg-model', [Keyword('system', 'CaCO3'),
                        Keyword('resolution', 'coarse-grained')],
           subfolders=[
