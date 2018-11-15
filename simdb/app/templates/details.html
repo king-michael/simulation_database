@@ -55,7 +55,9 @@
                 </tr>
                 <tr>
                     <td>Duration</td>
-                    <td>{{ sim.time_step*sim.n_steps }} ps</td>
+                    <td>{% if sim["time_step"] != None and sim["n_steps"] != None %}
+                        {{ sim.time_step*sim.n_steps }} ps
+                        {% endif %}</td>
                 </tr>
             </table>
 
