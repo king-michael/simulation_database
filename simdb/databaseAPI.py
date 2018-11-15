@@ -15,6 +15,8 @@
 #   -
 """
 
+from __future__ import absolute_import
+
 __author__ = ["Andrej Berg", "Michael King"]
 __date__ = "17.04.2018"
 
@@ -22,7 +24,7 @@ import pandas as pd
 import numpy as np
 import os
 
-from .databaseModel import *
+from simdb.databaseModel import *
 
 
 def listed(alist):
