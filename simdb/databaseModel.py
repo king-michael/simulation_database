@@ -92,7 +92,7 @@ class Main(Base):
             self.path)
 
 class AssociationMainMain(Base):
-   __tablename__ = 'association_main_keywords'
+   __tablename__ = 'association_main_main'
    parent_id = Column(Integer, ForeignKey('main.id'), primary_key=True)
    child_id = Column(Integer, ForeignKey('main.id'), primary_key=True)
    extra_data = Column(String(50))
