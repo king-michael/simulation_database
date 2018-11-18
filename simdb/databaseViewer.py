@@ -7,7 +7,7 @@
 #   Start by running:
 #       python dataBaseViewer.py
 # Authors:
-#   Andrej Berg
+#   Andrej Berg, Michael King
 # History:
 #   -
 # Last modified: 12.07.2018
@@ -17,8 +17,8 @@
 #   -
 """
 
-__author__ = ["Andrej Berg"]
-__date__ = "12.07.2018"
+__author__ = ["Andrej Berg", "Michael King"]
+__date__ = "18.11.2018"
 
 from app import app, db
 from app.views import *

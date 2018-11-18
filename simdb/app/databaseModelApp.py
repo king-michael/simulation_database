@@ -1,5 +1,8 @@
 """
 Database Model
+This is a data base which stores data to run the app.
+At the moment only paths to DB files are stored.
+One could add more Tables here if we need more features.
 """
 
 from sqlalchemy.ext.declarative import declarative_base

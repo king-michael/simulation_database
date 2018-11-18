@@ -5,6 +5,13 @@ from sqlalchemy.orm import sessionmaker
 
 from databaseModelApp import DBPath, Base
 
+
+#############################
+# AB: this file was for testing and will be deleted
+#########################
+
+
+
 db = 'app.db'
 # remove old DB
 # try:
