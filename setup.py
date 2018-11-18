@@ -17,7 +17,7 @@ setup(
         'michael.king@uni-konstanz.de',
         'andrej.berg@uni-konstanz.de'
     ],
-    description='Python application based on SQL, Flask and PyQt to manage meta information about MD simulations.', # ToDo: Description
+    description='Python application based on SQL, Flask and PyQt to manage meta information about MD simulations.',
     install_requires=[
         'SQLAlchemy',
         'flask',
