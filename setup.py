@@ -8,7 +8,7 @@ setup(
               'simdb.utils',
               ],
     url='https://github.com/king-michael/simulation_database',
-    license='', # ToDo: Choose a licence
+    license='Apache License, Version 2.0, January 2004, http://www.apache.org/licenses/',
     author=[
         'Michael King',
         'Andrej Berg'
@@ -17,7 +17,7 @@ setup(
         'michael.king@uni-konstanz.de',
         'andrej.berg@uni-konstanz.de'
     ],
-    description='', # ToDo: Description
+    description='Python application based on SQL, Flask and PyQt to manage meta information about MD simulations.', # ToDo: Description
     install_requires=[
         'SQLAlchemy',
         'flask',
