@@ -35,32 +35,7 @@
                 </tr>
             </table>
 
-            <!--<h4>Setup</h4>
-            <table id="setup-table" class="table">
-                <tr>
-                    <td>Type</td>
-                    <td>{{ sim.sim_type }}</td>
-                </tr>
-                <tr>
-                    <td>Number of atoms</td>
-                    <td>{{ sim.n_atoms }}</td>
-                </tr>
-                <tr>
-                    <td>Time step</td>
-                    <td>{{ sim.time_step }} ps</td>
-                </tr>
-                <tr>
-                    <td>Number of steps</td>
-                    <td>{{ sim.n_steps }}</td>
-                </tr>
-                <tr>
-                    <td>Duration</td>
-                    <td>{% if sim["time_step"] != None and sim["n_steps"] != None %}
-                        {{ sim.time_step*sim.n_steps }} ps
-                        {% endif %}</td>
-                </tr>
-            </table>
-
+            <!--
             <h4>Keywords</h4>
             <table id="keyword-table" class="table">
             {%- for keyword in sim.keywords %}
