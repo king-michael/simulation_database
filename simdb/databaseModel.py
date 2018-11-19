@@ -36,18 +36,21 @@ class Main(Base):
 
     id = Column(Integer(), primary_key=True, index=True)
     entry_id =  Column(String(50), unique=True, index=True) # should be discussed
+
+    path = Column(String(255))
     owner = Column(String(50), nullable=True)
     url = Column(String(255), nullable=True)
-    path = Column(String(255))
-    sim_type = Column(String(20), nullable=True)
+
+    type = Column(String(20), nullable=True)
     description = Column(String(1023), nullable=True) # maybe longer in the future
+
     created_on = Column(DateTime(), nullable=True)
     added_on = Column(DateTime(), default=datetime.now)
     updated_on = Column(DateTime(), default=datetime.now, onupdate=datetime.now)
 
-    n_atoms = Column(Integer(), nullable=True)
-    n_steps = Column(Integer(), nullable=True)
-    time_step = Column(Numeric(), nullable=True)
+    #n_atoms = Column(Integer(), nullable=True)
+    #n_steps = Column(Integer(), nullable=True)
+    #time_step = Column(Numeric(), nullable=True)
 
     children = relationship('AssociationMainMain',
                             back_populates="parent",
