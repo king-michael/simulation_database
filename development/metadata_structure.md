@@ -1,42 +1,56 @@
 main (contained in main table, no MetaEntry requeired)
 ---
-- owner
-- path
-- url
-- description
-- created_on
-- added_on
-- updated_on
-- type
+|keyword|content|OpenQuestions| 
+|-------|-------|-------------|
+| owner | me, you |
+| path | where to find the simulation | ?
+| url | linked url to the simulation | 
+| description | description of the simulation | 
+| created_on | creation date | |
+| added_on | added to the database | 
+| updated_on | last update in the database |
+| type | what kind of entry is this | 
 
 simulation (MetaGroup)
 ---
-- engine (LAMMPS, GROMACS, CHARMM, etc.)
-- sim_type
-- n_steps (targeted vs simulated?)
-- simulation_length (time units)
-- time_step
-- method (metaD, what ever)
+|keyword|content|OpenQuestions| 
+|-------|-------|-------------|
+| engine | LAMMPS, GROMACS, CHARMM, etc. |
+| sim_type |  | ?
+| n_steps | | (targeted vs simulated?)
+| simulation_length | time units | brauchen wir das? Kann das nicht beim rauslesen berechnet werden?
+| time_step | | |
+| method | | unterschied zu sim_type? |
+
 
 system (MetaGroup)
 ---
-- system_type (protein, mineral)
-- natoms
-- nsolvent
-- nsolute
+|keyword|content|OpenQuestions| 
+|-------|-------|-------------|
+| system_type | protein, mineral, polymere |
+| n_atoms | total number of atoms |
+| n_solvent | number of solvent atoms | or molecules???
+| n_solute | number of solute atoms | 
+
 
 thermostat (MetaGroup)
 ---
-- thermostat type
-- T_start
-- T_end
-- T_relax
-- thermostat info ?
+|keyword|content|OpenQuestions| 
+|-------|-------|-------------|
+| thermostat_type | | sollten das mapping irgendwo speichern
+| T_start | start temperature |
+| T_end | final temperature |
+| T_relax | relaxation time |
+| thermostat_info | additional parameter | how should we do this? a list of keywords and then seperate keywords into the group? a string?
 
 barostat (MetaGroup)
 ---
-- barostat type
-- p_coupling ?
-- p_start
-- p_end ?
-- p_relax ?
+|keyword|content|OpenQuestions| 
+|-------|-------|-------------|
+| barostat_type | | sollten das mapping irgendwo speichern
+| p_coupling | pressure coupling | 
+| p_start | start pressure |
+| p_end | final pressure |
+| p_relax | relaxation time |
+| barostat_info | additional parameter | how should we do this? a list? a string?
+
