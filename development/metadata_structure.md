@@ -1,4 +1,4 @@
-__main__ (contained in main table, no MetaEntry requeired)
+main (contained in main table, no MetaEntry requeired)
 ---
 - owner
 - path
@@ -9,7 +9,8 @@ __main__ (contained in main table, no MetaEntry requeired)
 - updated_on
 - type
 
-__simulation__ (MetaGroup)
+simulation (MetaGroup)
+---
 - engine (LAMMPS, GROMACS, CHARMM, etc.)
 - sim_type
 - n_steps (targeted vs simulated?)
@@ -17,14 +18,14 @@ __simulation__ (MetaGroup)
 - time_step
 - method (metaD, what ever)
 
-__system__ (MetaGroup)
+system (MetaGroup)
 ---
 - system_type (protein, mineral)
 - natoms
 - nsolvent
 - nsolute
 
-__thermostat__ (MetaGroup)
+thermostat (MetaGroup)
 ---
 - thermostat type
 - T_start
@@ -32,7 +33,7 @@ __thermostat__ (MetaGroup)
 - T_relax
 - thermostat info ?
 
-__barostat__ (MetaGroup)
+barostat (MetaGroup)
 ---
 - barostat type
 - p_coupling ?
