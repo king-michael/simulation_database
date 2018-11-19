@@ -5,7 +5,7 @@ from flask import render_template, request, redirect, flash,url_for
 from databaseViewer import app
 from app import db
 from app.databaseModelApp import DBPath
-from databaseAPI import getEntryTable, getEntryDetails, getEntryKeywords, getEntryMeta
+from databaseAPI import getEntryTable, getEntryDetails, getEntryKeywords, getEntryTags, getEntryMeta
 import pandas as pd
 
 # page where we can add DBs
@@ -72,5 +72,8 @@ def detail(db_id, entry_id):
     # render template
     return render_template(
         'details.html',
-        sim = getEntryDetails(path, entry_id)
+        sim = getEntryDetails(path, entry_id),
+        meta = getEntryMeta(path, entry_id),
+        keywords = getEntryKeywords(path, entry_id),
+        tags = getEntryTags(path, entry_id)
     )

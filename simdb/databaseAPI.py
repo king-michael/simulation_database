@@ -112,6 +112,16 @@ def getEntryKeywords(db_path, entry_id):
     s.close()
     return keywords
 
+def getEntryTags(db_path, entry_id):
+    s = openDatabase(db_path)
+
+    sim = s.query(Main).filter(Main.entry_id == entry_id).one()
+    tags = sim.keywords.all()
+    tags = [t.name for t in tags if t.value == None]
+
+    s.close()
+    return tags
+
 
 def getEntryMeta(db_path, entry_id):
     s = openDatabase(db_path)

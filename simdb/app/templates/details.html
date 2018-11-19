@@ -35,28 +35,41 @@
                 </tr>
             </table>
 
-            <!--
+            {% for meta_group_name in meta %}
+            <h4>{{ meta_group_name.replace("_", " ").capitalize() }}</h4>
+            <table id="{{ meta_group_name }}-table" class="table">
+                {% for meta_entry_name in meta[meta_group_name] %}
+                <tr>
+                    <td>{{ meta_entry_name }}</td>
+                    <td>{{ meta[meta_group_name][meta_entry_name] }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+            {% endfor %}
+
+            {% if tags|length != 0 %}
+            <h4>Tags</h4>
+            <table id="tags-table" class="table">
+                <tr>
+                {%- for tag in tags %}
+                <td>{{ tag }}</td>
+                {%- endfor %}
+                </tr>
+            </table>
+            {% endif %}
+
+            {% if keywords|length != 0 %}
             <h4>Keywords</h4>
             <table id="keyword-table" class="table">
-            {%- for keyword in sim.keywords %}
+            {%- for keyword_name in keywords %}
                 <tr>
-                    <td>{{ keyword.name }}</td>
-                    <td>{{ keyword.value }}</td>
+                    <td>{{ keyword_name }}</td>
+                    <td>{{ keywords[keyword_name] }}</td>
                 </tr>
             {%- endfor %}
             </table>
+            {% endif %}
 
-            {%- for meta_group in sim.meta %}
-            <h4>{{ meta_group.name }}</h4>
-            <table class="table meta_group_table">
-                {%- for meta_entry in meta_group.entries %}
-                    <tr>
-                        <td>{{ meta_entry.name }}</td>
-                        <td>{{ meta_entry.value }}</td>
-                    </tr>
-                {%- endfor %}
-            </table>
-            {%- endfor %}-->
 
         </div>
     </div>
