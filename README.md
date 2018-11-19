@@ -9,7 +9,7 @@ git clone ...
 
 Install
 ```
-pip install -e setup.py
+pip install -e . --user
 ```
 
 ## Run SimDB Viewer
