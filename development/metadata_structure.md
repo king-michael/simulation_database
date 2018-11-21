@@ -1,36 +1,37 @@
 main (contained in main table, no MetaEntry requeired)
 ---
-|keyword|content|OpenQuestions| 
-|-------|-------|-------------|
+|keyword|content|
+|-------|-------|
 | owner | me, you |
-| path | where to find the simulation | ?
+| path | where to find the simulation |
 | url | linked url to the simulation | 
 | description | description of the simulation | 
-| created_on | creation date | |
+| created_on | creation date | 
 | added_on | added to the database | 
 | updated_on | last update in the database |
 | type | what kind of entry is this | 
 
 simulation (MetaGroup)
 ---
-|keyword|content|OpenQuestions| 
-|-------|-------|-------------|
-| engine | LAMMPS, GROMACS, CHARMM, etc. |
-| sim_type |  | ?
-| n_steps | | (targeted vs simulated?)
-| simulation_length | time units | brauchen wir das? Kann das nicht beim rauslesen berechnet werden?
-| time_step | | |
-| method | | unterschied zu sim_type? |
+|keyword|content|
+|-------|-------|
+| engine | LAMMPS, GROMACS, CHARMM, etc. 
+| sim_type | extension, expansion etc. 
+| force_field | gromacs55a7, charmm36m
+| n_steps | simulated number of steps
+| time_step | used timestep | 
+| method | additional methods (MetaDynamic, UmberllaSampling, SWARM, Thermodynamic Integration)
 
 
 system (MetaGroup)
 ---
-|keyword|content|OpenQuestions| 
-|-------|-------|-------------|
+|keyword|content|
+|-------|-------|
 | system_type | protein, mineral, polymere |
 | n_atoms | total number of atoms |
-| n_solvent | number of solvent atoms | or molecules???
-| n_solute | number of solute atoms | 
+| n_solvent | number of solvent atoms
+| n_ions | number of ions
+| c_ions | concentration of ions
 
 
 thermostat (MetaGroup)
@@ -41,7 +42,9 @@ thermostat (MetaGroup)
 | T_start | start temperature |
 | T_end | final temperature |
 | T_relax | relaxation time |
-| thermostat_info | additional parameter | how should we do this? a list of keywords and then seperate keywords into the group? a string?
+| thermostat_info | additional parameter like `nh-chain-length`
+| nh-chain-length | Nose-Hoover chain length
+
 
 barostat (MetaGroup)
 ---
@@ -52,5 +55,6 @@ barostat (MetaGroup)
 | p_start | start pressure |
 | p_end | final pressure |
 | p_relax | relaxation time |
-| barostat_info | additional parameter | how should we do this? a list? a string?
+| barostat_info | additional parameter like `compressibility` 
+| compressibility | compressibility of the system 
 
