@@ -34,36 +34,42 @@ def index():
 # overview page which displays all entries in DB as a table/list
 @app.route('/view/', methods=['POST', 'GET'])
 def list_all():
-    path = ""
-
-    # check if a DB is selected
-    try:
-        path = request.form['path']
-    except:
-        pass
-
-    # load table if a valid DB is selected
-    if path != "" and os.path.exists(path):
-        table = getEntryTable(path, columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"], load_keys=False, load_tags=False)
-        db_id = db.session.query(DBPath).filter(DBPath.path == path).one().id
-        table["entry_id"] = table["entry_id"].apply(lambda x: '<a href="/{1}/{0}/">{0}</a>'.format(x, db_id))
-    else:
-        table = pd.DataFrame()
-
-    # let pandas print the full entry to HTML table
-    pd.set_option('display.max_colwidth', -1)
 
     # render the template
     return render_template(
         'list.html',
-        path=path,
-        databases = db.session.query(DBPath).all(),
-        table      = table.to_html(classes="table sortable", escape=False)
+        databases = db.session.query(DBPath).all()
     )
 
+# this page is only there to perform the search
+@app.route('/view/filter/')
+def filter_table():
+
+    # interaction with filterTable() js function
+    db_path = request.args['db_path'] # get the path to selected data base
+    search_query = request.args['search_query'] # get the search query from search field
+
+    # load table if a valid DB is selected
+    if db_path != "" and os.path.exists(db_path):
+        table = getEntryTable(db_path, columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"], load_keys=False, load_tags=False)
+    else:
+        table = pd.DataFrame([], columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"])
+
+    # filter by search query
+    if search_query != "":
+        mask = table['entry_id'].str.contains(search_query) | table['description'].str.contains(search_query)
+        table = table[mask]
+
+    # convert table to proper HTML
+    pd.set_option('display.max_colwidth', -1) # let pandas print the full entry to HTML table
+    db_id = db.session.query(DBPath).filter(DBPath.path == db_path).one().id # need this only while working with paths
+    table["entry_id"] = table["entry_id"].apply(lambda x: '<a href="details/{1}/{0}/">{0}</a>'.format(x, db_id)) # convert entry ids to links for details view
+    results = table.to_html(classes="table sortable", escape=False) # convert to HTML
+
+    return results
 
 # details page for each entry in DB
-@app.route('/<db_id>/<entry_id>/', methods=['POST', 'GET'])
+@app.route('/view/details/<db_id>/<entry_id>/', methods=['POST', 'GET'])
 def detail(db_id, entry_id):
 
     # get the path to selected DB
@@ -77,3 +83,4 @@ def detail(db_id, entry_id):
         keywords = getEntryKeywords(path, entry_id),
         tags = getEntryTags(path, entry_id)
     )
+

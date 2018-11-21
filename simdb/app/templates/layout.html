@@ -17,6 +17,29 @@
             $('.selectpicker').selectpicker();
         })
     </script>
+    <script>
+        // run live search on pandas table
+			function filterTable(){
+
+			    // get selected table, can I do this in one line?
+			    var e = document.getElementById("select_table");
+                var db_path = e.options[e.selectedIndex].value;
+
+                // get search query
+                var search_query = document.getElementById("search_field").value;
+
+				//value = value.trim(); // remove any spaces around the text
+					$.ajax({
+						url: "filter",                 // call the search page
+						data: {db_path: db_path, search_query: search_query},     // get results from search page by sending value
+						dataType: "html",
+						success: function(data){
+							$("#results").html(data);  // push resulting table to something with id=results
+						}
+
+					});
+			}
+		</script>
     <style type="text/css">
 
         #rounded {
@@ -51,7 +74,8 @@
     </style>
 </head>
 
-<body>
+<!--load table on startup-->
+<body onload="filterTable()">
 <nav class="navbar navbar-inverse">
     <div class="container-fluid">
         <!-- Brand and toggle get grouped for better mobile display -->
