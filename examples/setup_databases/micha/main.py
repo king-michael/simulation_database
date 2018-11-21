@@ -23,7 +23,7 @@ db_output = 'micha.db'
 
 clean_up = False        # delete files afterwards
 
-create_database = False # create the database
+create_database = True # create the database
 add_keywords = True     # add_keywords to the database
 
 # =========================================================================== #

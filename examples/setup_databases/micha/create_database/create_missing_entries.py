@@ -52,7 +52,7 @@ for sim_id in SIM_ID_MAIN_ALL:
            path = '',
            owner = OWNER,
            description = '',
-           sim_type = "MISSING ENTRY",
+           type='MISSING ENTRY',
         )
         session.add(sim)
 session.commit()
