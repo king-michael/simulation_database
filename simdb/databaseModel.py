@@ -110,8 +110,8 @@ class AssociationMainMain(Base):
 
    def __repr__(self):
        return """{}(parent='{}', child='{}', extra_data='{}')""".format(self.__class__.__name__,
-                                                                        self.parent.sim_id,
-                                                                        self.child.sim_id,
+                                                                        self.parent.id,
+                                                                        self.child.id,
                                                                         self.extra_data)
 
 class Keywords(Base):
