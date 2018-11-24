@@ -25,6 +25,7 @@ import numpy as np
 import os
 
 from simdb.databaseModel import *
+from sqlalchemy.orm.exc import NoResultFound
 
 
 def listed(alist):
@@ -58,6 +59,13 @@ def getKeywords(db_path):
     s.close()
     return key_dict
 
+def get_groups(db_path):
+    """Get all groups in database."""
+    s = openDatabase(db_path)
+    q = s.query(Groups)
+    groups = [g.name for g in q.all()]
+    return groups
+
 def getEntryTable(db_path, columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"], load_keys=True, load_tags=True):
     '''Get a pandas DataFrame with all entries in a data base and
     keywords and tags.'''
@@ -85,6 +93,79 @@ def getEntryTable(db_path, columns=["entry_id", "path", "created_on", "added_on"
     s.close()
 
     return main
+
+
+def add_to_group(db_path, entry_id, groupname):
+    """Add all simulations in entry_id to group.
+
+    Args:
+        db_path: string, path to database
+        entry_id: list, entry IDs of simulations which
+                  should be added to group
+        groupname: string, name of group
+    """
+    # check input
+    if len(entry_id):
+        print("No entries selected in entry_id.")
+        return False
+    if not hasattr(entry_id, "__iter__"):
+        print("entry_id is not iterable.")
+        return False
+
+    # open databae
+    s = openDatabase(db_path)
+
+    # get group if already in DB or create new group
+    try:
+        group = s.query(Groups).filter(Groups.name == groupname).one()
+    except NoResultFound:
+        group = Groups(name=groupname)
+        s.add(group)
+        s.commit()
+
+    entries = s.query(Main).filter(Main.entry_id.in_(entry_id)).all()
+
+    # add
+    for entry in entries:
+        group.entries.append(entry)
+
+    # commit and close
+    s.commit()
+    s.close()
+
+    return True
+
+
+def get_entry_group_table(db_path, groupname, columns=None):
+    """Get pandas table of all entries in certain group.
+
+    Args:
+        db_path: string, path to database
+        groupname: string, name of group
+        columns: list, columns which should be displayed
+    """
+
+    # open databae
+    s = openDatabase(db_path)
+
+    try:
+        group = s.query(Groups).filter(Groups.name == groupname).one()
+    except NoResultFound:
+        print("{} is not a group in selected database.".format(groupname))
+        return pd.DataFrame([], columns=columns)
+
+    q = s.query(Main).filter(Main.groups.any(id=group.id))
+
+    # get entries as pandas table
+    df = pd.read_sql(q.statement, s.bind, index_col="id")
+
+    s.close()
+
+    # convert output
+    if columns is not None:
+        df = df[columns]
+
+    return df
 
 
 def getEntryDetails(db_path, entry_id):

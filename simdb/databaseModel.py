@@ -144,7 +144,7 @@ class Groups(Base):
     __tablename__ = 'groups'
 
     id = Column(Integer(), primary_key=True, index=True)
-    name  =  Column(String(255))
+    name  =  Column(String(255), unique=True)
 
     entries = relationship('Main',
                            secondary=association_main_groups,
