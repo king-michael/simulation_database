@@ -5,8 +5,9 @@ from flask import render_template, request, redirect, flash,url_for
 from databaseViewer import app
 from app import db
 from app.databaseModelApp import DBPath
-from databaseAPI import getEntryTable, getEntryDetails, getEntryKeywords, getEntryTags, getEntryMeta
+from databaseAPI import *
 import pandas as pd
+import json
 
 # page where we can add DBs
 # this will be moved to /view/ in a later step
@@ -48,10 +49,23 @@ def filter_table():
     # interaction with filterTable() js function
     db_path = request.args['db_path'] # get the path to selected data base
     search_query = request.args['search_query'] # get the search query from search field
+    group = request.args['group']
+    tag = request.args['tag']
+
+    # hotfix until tags get multiselectable
+    if group == "" or group == "none":
+        group = None
+    else:
+        group = [group]
+
+    if tag == "" or tag == "none":
+        tag = None
+    else:
+        tag = [tag]
 
     # load table if a valid DB is selected
     if db_path != "" and os.path.exists(db_path):
-        table = getEntryTable(db_path, columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"], load_keys=False, load_tags=False)
+        table = get_entry_table(db_path, group_names=group, tags=tag, columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"])
     else:
         table = pd.DataFrame([], columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"])
 
@@ -67,6 +81,18 @@ def filter_table():
     results = table.to_html(classes="table sortable", escape=False) # convert to HTML
 
     return results
+
+# this page is only there to gather information for the filter
+@app.route('/view/build_filter/')
+def build_filter():
+
+    # interaction with buildFilter() js function
+    db_path = request.args['db_path']
+
+    out = {'groups' : get_groups(db_path),
+           'tags'   : getTags(db_path)}
+
+    return json.dumps(out)
 
 # details page for each entry in DB
 @app.route('/view/details/<db_id>/<entry_id>/', methods=['POST', 'GET'])

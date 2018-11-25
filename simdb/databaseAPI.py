@@ -26,6 +26,7 @@ import os
 
 from simdb.databaseModel import *
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy import or_, and_
 
 
 def listed(alist):
@@ -46,7 +47,8 @@ def getTags(db_path):
     s = openDatabase(db_path)
     q = s.query(Keywords).filter(Keywords.value == None)
     s.close()
-    return np.unique([e.name for e in q.all()])
+
+    return list(np.unique([e.name for e in q.all()]))
 
 def getKeywords(db_path):
     '''Get all keywords with their values which are used in a database.'''
@@ -136,25 +138,39 @@ def add_to_group(db_path, entry_id, groupname):
     return True
 
 
-def get_entry_group_table(db_path, groupname, columns=None):
-    """Get pandas table of all entries in certain group.
+def get_entry_table(db_path, group_names=None, tags=None, columns=None):
+    """Get pandas table of all entries meeting the selection creteria.
+    This is maybe a better way to get entries since selection is on SQL level.
 
     Args:
         db_path: string, path to database
-        groupname: string, name of group
+        group_names: list, names of groups, logic for groups is OR
+        tags: list, logic for tags is AND
         columns: list, columns which should be displayed
     """
 
     # open databae
     s = openDatabase(db_path)
+    q = s.query(Main)
 
-    try:
-        group = s.query(Groups).filter(Groups.name == groupname).one()
-    except NoResultFound:
-        print("{} is not a group in selected database.".format(groupname))
-        return pd.DataFrame([], columns=columns)
+    # filter by groups
+    if group_names is not None:
+        groups = []
+        for groupname in group_names:
+            try:
+                # collect groups
+                groups.append(s.query(Groups).filter(Groups.name == groupname).one())
+            except NoResultFound:
+                print("{} is not a group in selected database.".format(groupname))
 
-    q = s.query(Main).filter(Main.groups.any(id=group.id))
+        groups = [Main.groups.any(id=group.id) for group in groups]
+        q = q.filter(or_(*groups))
+
+    # filter by tags
+    if tags is not None:
+        tags = [and_(Main.keywords.any(name=tag), Main.keywords.any(value=None)) for tag in tags]
+
+        q = q.filter(and_(*tags))
 
     # get entries as pandas table
     df = pd.read_sql(q.statement, s.bind, index_col="id")
