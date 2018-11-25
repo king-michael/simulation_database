@@ -46,6 +46,9 @@ def list_all():
 @app.route('/view/filter/')
 def filter_table():
 
+    # options which one could change in GUI in the future
+    search_case_sensitive = False
+
     # interaction with filterTable() js function
     db_path = request.args['db_path'] # get the path to selected data base
     search_query = request.args['search_query'] # get the search query from search field
@@ -57,7 +60,6 @@ def filter_table():
         group = None
     else:
         group = [group]
-
     if tag == "" or tag == "none":
         tag = None
     else:
@@ -71,8 +73,36 @@ def filter_table():
 
     # filter by search query
     if search_query != "":
-        mask = table['entry_id'].str.contains(search_query) | table['description'].str.contains(search_query)
-        table = table[mask]
+
+        # convert search query string to list of statements
+        search_for = []
+        statement = ''
+        split = True  # split words if separated by whitespace
+
+        for l in search_query.strip():
+
+            if l == '"':
+                # quote starts or ends
+                split = not split
+
+            elif l == ' ' and split:
+                # statement ends, append to output
+                search_for.append(statement)
+                statement = ""
+
+            else:
+                # append letter to statement or whitespace if quote
+                statement += l
+
+        search_for.append(statement)
+
+        for statement in search_for:
+            if search_case_sensitive:
+                mask = table['entry_id'].str.contains(statement) | table['description'].str.contains(statement)
+            else:
+                # (?!) in regex tells re to do a search without case sensitivity
+                mask = table['entry_id'].str.contains('(?i)' + statement) | table['description'].str.contains('(?i)' + statement)
+            table = table[mask]
 
     # convert table to proper HTML
     pd.set_option('display.max_colwidth', -1) # let pandas print the full entry to HTML table
