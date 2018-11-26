@@ -25,6 +25,8 @@ import numpy as np
 import os
 
 from simdb.databaseModel import *
+from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy import or_, and_
 
 
 def listed(alist):
@@ -40,14 +42,16 @@ def openDatabase(db_path):
     session = Session()
     return session
 
-def getTags(db_path):
+
+def get_tags(db_path):
     '''Get all tags which are used in a database.'''
     s = openDatabase(db_path)
     q = s.query(Keywords).filter(Keywords.value == None)
     s.close()
-    return np.unique([e.name for e in q.all()])
 
-def getKeywords(db_path):
+    return list(np.unique([e.name for e in q.all()]))
+
+def get_keywords(db_path):
     '''Get all keywords with their values which are used in a database.'''
     s = openDatabase(db_path)
     q = s.query(Keywords)
@@ -57,6 +61,13 @@ def getKeywords(db_path):
         key_dict[k] = np.unique([e.value for e in q.filter(Keywords.value != None, Keywords.name == k).all()])
     s.close()
     return key_dict
+
+def get_groups(db_path):
+    """Get all groups in database."""
+    s = openDatabase(db_path)
+    q = s.query(Groups)
+    groups = [g.name for g in q.all()]
+    return groups
 
 def getEntryTable(db_path, columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"], load_keys=True, load_tags=True):
     '''Get a pandas DataFrame with all entries in a data base and
@@ -85,6 +96,182 @@ def getEntryTable(db_path, columns=["entry_id", "path", "created_on", "added_on"
     s.close()
 
     return main
+
+
+def add_to_group(db_path, entry_id, groupname):
+    """Add all simulations in entry_id to group.
+
+    Args:
+        db_path: string, path to database
+        entry_id: list, entry IDs of simulations which
+                  should be added to group
+        groupname: string, name of group
+    """
+    # check input
+    if len(entry_id) == 0:
+        print("No entries selected in entry_id.")
+        return False
+    if not hasattr(entry_id, "__iter__"):
+        print("entry_id is not iterable.")
+        return False
+
+    # open databae
+    s = openDatabase(db_path)
+
+    # get group if already in DB or create new group
+    try:
+        group = s.query(Groups).filter(Groups.name == groupname).one()
+    except NoResultFound:
+        group = Groups(name=groupname)
+        s.add(group)
+        s.commit()
+
+    entries = s.query(Main).filter(Main.entry_id.in_(entry_id)).all()
+
+    # add
+    for entry in entries:
+        group.entries.append(entry)
+
+    # commit and close
+    s.commit()
+    s.close()
+
+    return True
+
+
+def get_entry_table(db_path, group_names=None, tags=None, columns=None):
+    """Get pandas table of all entries meeting the selection creteria.
+    This is maybe a better way to get entries since selection is on SQL level.
+
+    Args:
+        db_path: string, path to database
+        group_names: list, names of groups, logic for groups is OR
+        tags: list, logic for tags is AND
+        columns: list, columns which should be displayed
+    """
+
+    # open databae
+    s = openDatabase(db_path)
+    q = s.query(Main)
+
+    # filter by groups
+    if group_names is not None:
+        groups = []
+        for groupname in group_names:
+            try:
+                # collect groups
+                groups.append(s.query(Groups).filter(Groups.name == groupname).one())
+            except NoResultFound:
+                print("{} is not a group in selected database.".format(groupname))
+
+        groups = [Main.groups.any(id=group.id) for group in groups]
+        q = q.filter(or_(*groups))
+
+    # filter by tags
+    if tags is not None:
+        tags = [and_(Main.keywords.any(name=tag), Main.keywords.any(value=None)) for tag in tags]
+
+        q = q.filter(and_(*tags))
+
+    # get entries as pandas table
+    df = pd.read_sql(q.statement, s.bind, index_col="id")
+
+    s.close()
+
+    # convert output
+    if columns is not None:
+        df = df[columns]
+
+    return df
+
+
+def get_entry_details(db_path, entry_id):
+    """Get all information about an entry in database.
+
+    Args:
+        db_path: path to database file
+        entry_id: string
+
+    Return:
+        out: dictionary
+
+    """
+
+    s = openDatabase(db_path)
+
+    # find entry
+    try:
+        sim = s.query(Main).filter(Main.entry_id == entry_id).one()
+    except NoResultFound:
+        print("No entry found with entry_id {} in {}.".format(entry_id, db_path))
+        return {}
+
+    # details from main table
+    out = sim.__dict__
+
+    # groups
+    out["groups"] = [g.name for g in sim.groups]
+
+    # tags
+    out["tags"] = [t.name for t in sim.keywords.all() if t.value == None]
+
+    # keywords
+    out["keywords"] = {k.name: k.value for k in sim.keywords.all() if k.value != None}
+
+    # meta data
+    meta = {}
+    for meta_group in sim.meta.all():
+        meta[meta_group.name] = {m.name: m.value for m in meta_group.entries.all()}
+    out["meta"] = meta
+
+    s.close()
+
+    # clean up output
+    try:
+        del out["_sa_instance_state"]
+    except:
+        pass
+
+    return out
+
+def remove_from_group(db_path, entry_id, group_name):
+    """Remove all simulations in entry_id from group.
+
+    Args:
+        db_path: string, path to database
+        entry_id: list, entry IDs of simulations which
+                  should be added to group
+        group_name: string, name of group
+    """
+    # check input
+    if len(entry_id) == 0:
+        print("No entries selected in entry_id.")
+        return False
+    if not hasattr(entry_id, "__iter__"):
+        print("entry_id is not iterable.")
+        return False
+
+    # open databae
+    s = openDatabase(db_path)
+
+    # get group if in DB
+    try:
+        group = s.query(Groups).filter(Groups.name == group_name).one()
+    except NoResultFound:
+        print("Group {} was not found in DB".format())
+
+    # get only those entries which are in group
+    entries = s.query(Main).filter(Main.groups.any(id=group.id)).filter(Main.entry_id.in_(entry_id)).all()
+
+    # remove
+    for entry in entries:
+        group.entries.remove(entry)
+
+    # commit and close
+    s.commit()
+    s.close()
+
+    return True
 
 
 def getEntryDetails(db_path, entry_id):

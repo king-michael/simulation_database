@@ -31,6 +31,12 @@ Base = declarative_base()
 
 # TODO Add mapping Association-->Main; e.g. Main.parents shold return list of Main obj
 
+association_main_groups = Table('association_main_groups', Base.metadata,
+    Column('main_id', Integer, ForeignKey('main.id')),
+    Column('group_id', Integer, ForeignKey('groups.id'))
+)
+
+
 class Main(Base):
     __tablename__ = 'main'
 
@@ -59,6 +65,7 @@ class Main(Base):
                             passive_deletes=True,  # apply delete also for entries in assosiation
                             lazy='dynamic'
                             )
+
     parents = relationship('AssociationMainMain',
                            back_populates="child",
                            foreign_keys='AssociationMainMain.child_id',
@@ -66,24 +73,28 @@ class Main(Base):
                            passive_deletes=True,  # apply delete also for entries in assosiation
                            lazy='dynamic'
                            )
+
     keywords = relationship('Keywords',
                             backref='entry_id' , # check cascade_backrefs
                             lazy='dynamic', # lazy='dynamic' -> returns query so we can filter
                             cascade="all, delete-orphan", # apply delete also for childs
                             passive_deletes=True, # apply delete also for childs
                             )  # lazy='dynamic' -> returns query so we can filter
+
     meta = relationship('MetaGroups',
                             backref='entry_id',  # check cascade_backrefs
                             lazy='dynamic',  # lazy='dynamic' -> returns query so we can filter
                             cascade="all, delete-orphan",  # apply delete also for childs
                             passive_deletes=True,  # apply delete also for childs
                             )  # lazy='dynamic' -> returns query so we can filter
+
     groups = relationship('Groups',
-                          backref='entry_id',  # check cascade_backrefs
-                          lazy='dynamic',  # lazy='dynamic' -> returns query so we can filter
-                          cascade="all, delete-orphan",  # apply delete also for childs
-                          passive_deletes=True,  # apply delete also for childs
-                          )  # lazy='dynamic' -> returns query so we can filter
+                          secondary=association_main_groups,
+                          back_populates='entries',
+                          # lazy='dynamic',  # lazy='dynamic' -> returns query so we can filter
+                          # cascade="all, delete-orphan",  # apply delete also for groups
+                          # passive_deletes=True,  # apply delete also for childs
+                          )
 
 
 
@@ -133,14 +144,41 @@ class Groups(Base):
     __tablename__ = 'groups'
 
     id = Column(Integer(), primary_key=True, index=True)
-    main_id =  Column(Integer(), ForeignKey('main.id') , index=True)
-    name  =  Column(String(255), index=True)
+    name  =  Column(String(255), unique=True)
+
+    entries = relationship('Main',
+                           secondary=association_main_groups,
+                           back_populates='groups',
+                           # lazy='dynamic',  # lazy='dynamic' -> returns query so we can filter
+                           # cascade="all, delete-orphan",  # apply delete also for groups
+                           # passive_deletes=True,  # apply delete also for childs
+                           )
 
     def __repr__(self):
-        return "{}(main_id='{}', name='{}')".format(
+        return "{}(name='{}')".format(
             self.__class__.__name__,
-            self.main_id,
             self.name)
+
+# class AssociationMainGroups(Base):
+#    __tablename__ = 'association_main_groups'
+#
+#    main_id = Column(Integer, ForeignKey('main.id'), primary_key=True)
+#    group_id = Column(Integer, ForeignKey('groups.id'), primary_key=True)
+#
+#    entry = relationship("Main",
+#                         foreign_keys='AssociationMainGroups.main_id',
+#                         back_populates="groups"
+#                         )
+#
+#    group = relationship("Groups",
+#                          foreign_keys='AssociationMainGroups.group_id',
+#                          back_populates="entries"
+#                          )
+#
+#    def __repr__(self):
+#        return """{}(entry='{}', parent='{}')""".format(self.__class__.__name__,
+#                                                                         self.entry.sim_id,
+#                                                                         self.group.name)
 
 class MetaGroups(Base):
     __tablename__ = 'metagroups'
