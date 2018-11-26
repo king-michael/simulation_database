@@ -26,6 +26,7 @@ import os
 
 from simdb.databaseModel import *
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm import noload
 from sqlalchemy import or_, and_
 
 
@@ -156,7 +157,7 @@ def get_entry_table(db_path, group_names=None, tags=None, columns=None):
 
     # open databae
     s = openDatabase(db_path)
-    q = s.query(Main)
+    q = s.query(Main).options(noload(Main.keywords))
 
     # filter by groups
     if group_names is not None:
