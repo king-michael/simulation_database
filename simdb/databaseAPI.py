@@ -402,6 +402,8 @@ def store_dict(entry_id,
 #### deprecated #####
 # functions below are deprecated and will be removed
 # after checking that they are not used any more
+# Micha: please do not remove them. get_entry_keywords / tags could be usefull
+# used in app.py !
 
 def getEntryDetails(db_path, entry_id):
     s = openDatabase(db_path)
@@ -422,8 +424,8 @@ def getEntryKeywords(db_path, entry_id):
     s = openDatabase(db_path)
 
     sim = s.query(Main).filter(Main.entry_id == entry_id).one()
-    keywords = sim.keywords.all()
-    keywords = {k.name: k.value for k in keywords if k.value != None}
+    keywords = dict((k.name, k.value) for k in sim.keywords
+                    if k.value != 'None' and k is not None)
 
     s.close()
     return keywords
@@ -432,8 +434,7 @@ def getEntryTags(db_path, entry_id):
     s = openDatabase(db_path)
 
     sim = s.query(Main).filter(Main.entry_id == entry_id).one()
-    tags = sim.keywords.all()
-    tags = [t.name for t in tags if t.value == None]
+    tags = [t.name for t in sim.keywords if t.value == "None" or t.value is None]
 
     s.close()
     return tags
