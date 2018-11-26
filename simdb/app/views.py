@@ -120,7 +120,7 @@ def build_filter():
     db_path = request.args['db_path']
 
     out = {'groups' : get_groups(db_path),
-           'tags'   : getTags(db_path)}
+           'tags'   : get_tags(db_path)}
 
     return json.dumps(out)
 

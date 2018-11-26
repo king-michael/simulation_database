@@ -42,7 +42,8 @@ def openDatabase(db_path):
     session = Session()
     return session
 
-def getTags(db_path):
+
+def get_tags(db_path):
     '''Get all tags which are used in a database.'''
     s = openDatabase(db_path)
     q = s.query(Keywords).filter(Keywords.value == None)
@@ -50,7 +51,7 @@ def getTags(db_path):
 
     return list(np.unique([e.name for e in q.all()]))
 
-def getKeywords(db_path):
+def get_keywords(db_path):
     '''Get all keywords with their values which are used in a database.'''
     s = openDatabase(db_path)
     q = s.query(Keywords)
@@ -107,7 +108,7 @@ def add_to_group(db_path, entry_id, groupname):
         groupname: string, name of group
     """
     # check input
-    if len(entry_id):
+    if len(entry_id) == 0:
         print("No entries selected in entry_id.")
         return False
     if not hasattr(entry_id, "__iter__"):
@@ -182,6 +183,95 @@ def get_entry_table(db_path, group_names=None, tags=None, columns=None):
         df = df[columns]
 
     return df
+
+
+def get_entry_details(db_path, entry_id):
+    """Get all information about an entry in database.
+
+    Args:
+        db_path: path to database file
+        entry_id: string
+
+    Return:
+        out: dictionary
+
+    """
+
+    s = openDatabase(db_path)
+
+    # find entry
+    try:
+        sim = s.query(Main).filter(Main.entry_id == entry_id).one()
+    except NoResultFound:
+        print("No entry found with entry_id {} in {}.".format(entry_id, db_path))
+        return {}
+
+    # details from main table
+    out = sim.__dict__
+
+    # groups
+    out["groups"] = [g.name for g in sim.groups]
+
+    # tags
+    out["tags"] = [t.name for t in sim.keywords.all() if t.value == None]
+
+    # keywords
+    out["keywords"] = {k.name: k.value for k in sim.keywords.all() if k.value != None}
+
+    # meta data
+    meta = {}
+    for meta_group in sim.meta.all():
+        meta[meta_group.name] = {m.name: m.value for m in meta_group.entries.all()}
+    out["meta"] = meta
+
+    s.close()
+
+    # clean up output
+    try:
+        del out["_sa_instance_state"]
+    except:
+        pass
+
+    return out
+
+def remove_from_group(db_path, entry_id, group_name):
+    """Remove all simulations in entry_id from group.
+
+    Args:
+        db_path: string, path to database
+        entry_id: list, entry IDs of simulations which
+                  should be added to group
+        group_name: string, name of group
+    """
+    # check input
+    if len(entry_id) == 0:
+        print("No entries selected in entry_id.")
+        return False
+    if not hasattr(entry_id, "__iter__"):
+        print("entry_id is not iterable.")
+        return False
+
+    # open databae
+    s = openDatabase(db_path)
+
+    # get group if in DB
+    try:
+        group = s.query(Groups).filter(Groups.name == group_name).one()
+    except NoResultFound:
+        print("Group {} was not found in DB".format())
+
+    # get only those entries which are in group
+    entries = s.query(Main).filter(Main.groups.any(id=group.id)).filter(Main.entry_id.in_(entry_id)).all()
+
+    # remove
+    for entry in entries:
+        group.entries.remove(entry)
+
+    # commit and close
+    s.commit()
+    s.close()
+
+    return True
 
 
 def getEntryDetails(db_path, entry_id):
