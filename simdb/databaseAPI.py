@@ -33,6 +33,7 @@ def listed(alist):
     '''Convert list to comma seperated string.'''
     return ",".join("{}".format(i) for i in alist)
 
+
 def openDatabase(db_path):
     '''Open data base and return session.'''
     if not os.path.exists(db_path):
@@ -51,6 +52,7 @@ def get_tags(db_path):
 
     return list(np.unique([e.name for e in q.all()]))
 
+
 def get_keywords(db_path):
     '''Get all keywords with their values which are used in a database.'''
     s = openDatabase(db_path)
@@ -62,12 +64,14 @@ def get_keywords(db_path):
     s.close()
     return key_dict
 
+
 def get_groups(db_path):
     """Get all groups in database."""
     s = openDatabase(db_path)
     q = s.query(Groups)
     groups = [g.name for g in q.all()]
     return groups
+
 
 def getEntryTable(db_path, columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"], load_keys=True, load_tags=True):
     '''Get a pandas DataFrame with all entries in a data base and
@@ -274,56 +278,6 @@ def remove_from_group(db_path, entry_id, group_name):
     return True
 
 
-def getEntryDetails(db_path, entry_id):
-    s = openDatabase(db_path)
-
-    sim = s.query(Main).filter(Main.entry_id == entry_id).one()
-    d = sim.__dict__
-    try:
-        del d["_sa_instance_state"]
-    except:
-        pass
-    out = sim.__dict__
-
-    s.close()
-    return out
-
-
-def getEntryKeywords(db_path, entry_id):
-    s = openDatabase(db_path)
-
-    sim = s.query(Main).filter(Main.entry_id == entry_id).one()
-    keywords = sim.keywords.all()
-    keywords = {k.name: k.value for k in keywords if k.value != None}
-
-    s.close()
-    return keywords
-
-def getEntryTags(db_path, entry_id):
-    s = openDatabase(db_path)
-
-    sim = s.query(Main).filter(Main.entry_id == entry_id).one()
-    tags = sim.keywords.all()
-    tags = [t.name for t in tags if t.value == None]
-
-    s.close()
-    return tags
-
-
-def getEntryMeta(db_path, entry_id):
-    s = openDatabase(db_path)
-
-    sim = s.query(Main).filter(Main.entry_id == entry_id).one()
-
-    out = {}
-    for meta_group in sim.meta.all():
-        out[meta_group.name] = {meta.name: meta.value for meta in meta_group.entries.all()}
-
-    s.close()
-    return out
-
-
-
 def selectByKeyword(table, name, value):
     '''Get mask for selection of entries by keyword.'''
     return table[name] == value
@@ -442,3 +396,56 @@ def store_dict(entry_id,
     sim = Main(**main_kwargs)
     
     return sim
+
+
+#### deprecated #####
+# functions below are deprecated and will be removed
+# after checking that they are not used any more
+
+def getEntryDetails(db_path, entry_id):
+    s = openDatabase(db_path)
+
+    sim = s.query(Main).filter(Main.entry_id == entry_id).one()
+    d = sim.__dict__
+    try:
+        del d["_sa_instance_state"]
+    except:
+        pass
+    out = sim.__dict__
+
+    s.close()
+    return out
+
+
+def getEntryKeywords(db_path, entry_id):
+    s = openDatabase(db_path)
+
+    sim = s.query(Main).filter(Main.entry_id == entry_id).one()
+    keywords = sim.keywords.all()
+    keywords = {k.name: k.value for k in keywords if k.value != None}
+
+    s.close()
+    return keywords
+
+def getEntryTags(db_path, entry_id):
+    s = openDatabase(db_path)
+
+    sim = s.query(Main).filter(Main.entry_id == entry_id).one()
+    tags = sim.keywords.all()
+    tags = [t.name for t in tags if t.value == None]
+
+    s.close()
+    return tags
+
+
+def getEntryMeta(db_path, entry_id):
+    s = openDatabase(db_path)
+
+    sim = s.query(Main).filter(Main.entry_id == entry_id).one()
+
+    out = {}
+    for meta_group in sim.meta.all():
+        out[meta_group.name] = {meta.name: meta.value for meta in meta_group.entries.all()}
+
+    s.close()
+    return out

@@ -1,0 +1,18 @@
+{% extends 'layout.html' %}
+{% from 'macros.html' import icon %}
+{% block content %}
+
+    <div id="edit_app_entry">
+        <form action="/edit/{{ db_entry.id }}" method="POST">
+            <label>Path</label>
+            <input name="path" value="{{ db_entry.path }}">
+            <br>
+            <label>Comment</label>
+            <input name="comment" value="{{ db_entry.comment }}">
+            <br>
+          <input type="submit" value="Submit">
+        </form>
+    </div>
+
+
+{% endblock %}

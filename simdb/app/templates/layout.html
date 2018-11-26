@@ -8,15 +8,44 @@
     <link rel="stylesheet" href="/static/css/bootstrap.css">
     <link rel="stylesheet" href="/static/css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="/static/css/bootstrap-select.css">
-    <script src="/static/js/jquery-2.1.3.js"></script>
+    <!--<script src="/static/js/jquery-2.1.3.js"></script>-->
     <script src="/static/js/bootstrap.js"></script>
     <script src="/static/js/bootstrap-select.js"></script>
     <script src="/static/js/sortable.js"></script>
+
+    <!--JQuery UI files-->
+    <!--should we make them local?-->
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
     <script>
-        $(document).ready(function () {
-            $('.selectpicker').selectpicker();
-        })
+        $( function() {
+        $( "#add_dialog" ).dialog({
+          autoOpen: false,
+          // show: {
+          //   effect: "blind",
+          //   duration: 1000
+          // },
+          // hide: {
+          //   effect: "fade",
+          //   duration: 1000
+          // }
+        });
+
+        $( "#open_add_dialog" ).on( "click", function() {
+          $( "#add_dialog" ).dialog( "open" );
+        });
+        } );
     </script>
+
+    <!--AB: I have no idea what this is for; I guess this was a experiment-->
+    <!--<script>-->
+        <!--$(document).ready(function () {-->
+            <!--$('.selectpicker').selectpicker();-->
+        <!--})-->
+    <!--</script>-->
+
     <script>
         // run live search on pandas table
         function filterTable(){
@@ -46,7 +75,7 @@
         }
     </script>
     <script>
-        // run live search on pandas table
+        // get everything to build up the filter
         function buildFilter(){
 
             // get selected table, can I do this in one line?
@@ -82,6 +111,7 @@
                 });
         }
     </script>
+
     <style type="text/css">
 
         #rounded {
@@ -118,6 +148,7 @@
 
 <!--load table on startup-->
 <body onload="filterTable()">
+
 <nav class="navbar navbar-inverse">
     <div class="container-fluid">
         <!-- Brand and toggle get grouped for better mobile display -->

@@ -1,10 +1,11 @@
 import sys, os
 sys.path.append("..")
-from flask import render_template, request, redirect, flash,url_for
+from flask import render_template, request, redirect, flash, url_for, abort
 #from databaseModel import Main
 from databaseViewer import app
 from app import db
 from app.databaseModelApp import DBPath
+from sqlalchemy.orm.exc import NoResultFound
 from databaseAPI import *
 import pandas as pd
 import json
@@ -16,14 +17,20 @@ def index():
 
     # if a path and comment are provided
     # add this DB to list of selectable DBs
-    # this has to be changed!
+    # I have no idea if this is a good way to do this
     try:
         path = request.form['path']
+    except:
+        path = False
+    try:
         comment = request.form['comment']
+    except:
+        comment = False
+
+    if path and comment:
         db.session.add(DBPath(path=path, comment=comment))
         db.session.commit()
-    except:
-        pass
+        flash('Entry added successfully!')
 
     # render the template
     return render_template(
@@ -140,3 +147,62 @@ def detail(db_id, entry_id):
         tags = getEntryTags(path, entry_id)
     )
 
+
+@app.route('/delete/<int:id>', methods=['GET', 'POST'])
+def delete(id):
+    """
+    Delete the path to database that matches the specified
+    id in the URL
+    """
+    try:
+        e = db.session.query(DBPath).filter_by(id=id).one()
+    except NoResultFound:
+        abort(404)
+
+
+    # delete the item from the database
+    db.session.delete(e)
+    db.session.commit()
+
+    flash('Entry deleted successfully!')
+
+    return redirect('/')
+
+
+@app.route('/edit/<int:id>', methods=['GET', 'POST'])
+def edit(id):
+    """
+    Edit the path etc. to database that matches the specified
+    id in the URL
+    """
+
+    # get the entry first
+    try:
+        e = db.session.query(DBPath).filter_by(id=id).one()
+    except NoResultFound:
+        abort(404)
+
+    # try to get request
+    try:
+        path = request.form['path']
+    except:
+        path = False
+    try:
+        comment = request.form['comment']
+    except:
+        comment = False
+
+
+    if path and comment:
+        # request was submitted, edit entry
+        e.path = path
+        e.comment = comment
+        db.session.commit()
+
+        flash('Entry edited successfully!')
+
+        return redirect('/')
+
+    else:
+        # no request, show form
+        return render_template("edit_app_entry.html", db_entry=e)
