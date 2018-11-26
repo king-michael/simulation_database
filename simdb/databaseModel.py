@@ -63,22 +63,37 @@ class Main(Base):
                             foreign_keys='AssociationMainMain.parent_id',
                             cascade="all, delete-orphan",  # apply delete also for entries in assosiation
                             passive_deletes=True,  # apply delete also for entries in assosiation
-                            lazy='dynamic'
+                            lazy='joined'
                             )
+
+    children_query = relationship('AssociationMainMain',
+                                  foreign_keys='AssociationMainMain.parent_id',
+                                  lazy='dynamic', viewonly=True
+                                  )
 
     parents = relationship('AssociationMainMain',
                            back_populates="child",
                            foreign_keys='AssociationMainMain.child_id',
                            cascade="all, delete-orphan",  # apply delete also for entries in assosiation
                            passive_deletes=True,  # apply delete also for entries in assosiation
-                           lazy='dynamic'
+                           lazy='joined'
                            )
+
+    parents_query = relationship('AssociationMainMain',
+                                  foreign_keys='AssociationMainMain.child_id',
+                                  lazy='dynamic', viewonly=True
+                                 )
 
     keywords = relationship('Keywords',
                             backref='entry_id' , # check cascade_backrefs
-                            lazy='dynamic', # lazy='dynamic' -> returns query so we can filter
+                            lazy='joined', # lazy='joined' -> we can join this
                             cascade="all, delete-orphan", # apply delete also for childs
                             passive_deletes=True, # apply delete also for childs
+                            )
+
+    keywords_query = relationship('Keywords',
+                            lazy='dynamic', # lazy='dynamic' -> returns query so we can filter
+                            viewonly=True, # only a view
                             )  # lazy='dynamic' -> returns query so we can filter
 
     meta = relationship('MetaGroups',
@@ -121,8 +136,8 @@ class AssociationMainMain(Base):
 
    def __repr__(self):
        return """{}(parent='{}', child='{}', extra_data='{}')""".format(self.__class__.__name__,
-                                                                        self.parent.sim_id,
-                                                                        self.child.sim_id,
+                                                                        self.parent.id,
+                                                                        self.child.id,
                                                                         self.extra_data)
 
 class Keywords(Base):
