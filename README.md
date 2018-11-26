@@ -15,7 +15,7 @@ pip install -e . --user
 ## Run SimDB Viewer
 
 ```
-cd simulation_database/simdb
+cd simulation_database/simdb/viewer
 
 python databaseViewer.py
 ```
