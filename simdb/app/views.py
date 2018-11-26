@@ -116,7 +116,7 @@ def filter_table():
     # convert table to proper HTML
     pd.set_option('display.max_colwidth', -1) # let pandas print the full entry to HTML table
     table["entry_id"] = table["entry_id"].apply(lambda x: '<a href="details/{1}/{0}/">{0}</a>'.format(x, db_id)) # convert entry ids to links for details view
-    results = table.to_html(classes="table sortable") # convert to HTML
+    results = table.to_html(classes="table sortable", escape=False) # convert to HTML
 
     return results
 
