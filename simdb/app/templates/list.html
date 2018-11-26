@@ -6,13 +6,25 @@
         {% if databases|count > 0 %}
             Please select DB:
             <br>
-            <select id="select_table" name="select_table" onchange="filterTable()" size="{{ databases|count }}">
+
+
+            <select id="select_table" name="select_table" onchange="filterTable();buildFilter()" size="{{ databases|count }}">
                 {%- for db in databases %}
                     <option value="{{ db.path }}">{{ db.path }}</option>
                 {%- endfor %}
             </select>
+
+
+            <select id="select_group" name="select_group" onchange="filterTable()" size="1">
+            </select>
+
+            <select id="select_tag" name="select_tag" onchange="filterTable()" size="1">
+            </select>
+
+
             <br>
             <input id="search_field" type="text" onkeyup="filterTable()" placeholder="Search in Entry ID and Description ..." size="100">
+
         {% else %}
             <p>No entries found</h3>
         {% endif %}

@@ -19,27 +19,69 @@
     </script>
     <script>
         // run live search on pandas table
-			function filterTable(){
+        function filterTable(){
 
-			    // get selected table, can I do this in one line?
-			    var e = document.getElementById("select_table");
-                var db_path = e.options[e.selectedIndex].value;
+            // get selected table
+            var db_path = $( "#select_table" ).val();
 
-                // get search query
-                var search_query = document.getElementById("search_field").value;
+            // get selected group
+            var g = $( "#select_group" ).val();
 
-				//value = value.trim(); // remove any spaces around the text
-					$.ajax({
-						url: "filter",                 // call the search page
-						data: {db_path: db_path, search_query: search_query},     // get results from search page by sending value
-						dataType: "html",
-						success: function(data){
-							$("#results").html(data);  // push resulting table to something with id=results
-						}
+            // get selected tag
+            var t = $( "#select_tag" ).val();
 
-					});
-			}
-		</script>
+            // get search query
+            var search_query = document.getElementById("search_field").value;
+
+            //value = value.trim(); // remove any spaces around the text
+                $.ajax({
+                    url: "filter",                 // call the search page
+                    data: {db_path: db_path, search_query: search_query, group: g, tag: t},     // get results from search page by sending value
+                    dataType: "html",
+                    success: function(data){
+                        $("#results").html(data);  // push resulting table to something with id=results
+                    }
+
+                });
+        }
+    </script>
+    <script>
+        // run live search on pandas table
+        function buildFilter(){
+
+            // get selected table, can I do this in one line?
+            var e = document.getElementById("select_table");
+            var db_path = e.options[e.selectedIndex].value;
+
+            //value = value.trim(); // remove any spaces around the text
+                $.ajax({
+                    url: "build_filter",                 // call the search page
+                    data: {db_path: db_path},     // get results from search page by sending value
+                    dataType: "json",
+                    success: function(data){
+                        //document.write(data.groups);
+                        // PREPARE selection htm for groups returned by build_filter
+                        var out = "<option value='none'>None ...</option>";
+                        for(i in data.groups){
+ 								out += "<option value='" + data.groups[i] + "'>" + data.groups[i] + "</option>";
+ 							}
+                        $("#select_group").html(out); // push options to selection tag
+                        $("#select_group").attr("size", data.groups.length + 1);
+
+                        // tags
+                        var out = "<option value='none'>None ...</option>";
+                        for(i in data.tags){
+ 								out += "<option value='" + data.tags[i] + "'>" + data.tags[i] + "</option>";
+ 							}
+                        $("#select_tag").html(out); // push options to selection tag
+                        $("#select_tag").attr("size", data.tags.length + 1);
+
+                        // keywords
+                    }
+
+                });
+        }
+    </script>
     <style type="text/css">
 
         #rounded {

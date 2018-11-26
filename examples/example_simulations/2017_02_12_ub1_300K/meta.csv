@@ -1,0 +1,5 @@
+chainlen,1
+ff,GROMOS
+temp,300
+protein,UBQ
+note,UBQ monomer simulations at diff. temperatures for NN taining set.
