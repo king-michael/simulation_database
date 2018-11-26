@@ -74,8 +74,10 @@ def filter_table():
 
     # load table if a valid DB is selected
     if db_path != "" and os.path.exists(db_path):
+        db_id = db.session.query(DBPath).filter(DBPath.path == db_path).one().id  # need this only while working with paths
         table = get_entry_table(db_path, group_names=group, tags=tag, columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"])
     else:
+        db_id = 0
         table = pd.DataFrame([], columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"])
 
     # filter by search query
@@ -113,9 +115,8 @@ def filter_table():
 
     # convert table to proper HTML
     pd.set_option('display.max_colwidth', -1) # let pandas print the full entry to HTML table
-    db_id = db.session.query(DBPath).filter(DBPath.path == db_path).one().id # need this only while working with paths
     table["entry_id"] = table["entry_id"].apply(lambda x: '<a href="details/{1}/{0}/">{0}</a>'.format(x, db_id)) # convert entry ids to links for details view
-    results = table.to_html(classes="table sortable", escape=False) # convert to HTML
+    results = table.to_html(classes="table sortable") # convert to HTML
 
     return results
 

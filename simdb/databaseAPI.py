@@ -217,15 +217,15 @@ def get_entry_details(db_path, entry_id):
     out["groups"] = [g.name for g in sim.groups]
 
     # tags
-    out["tags"] = [t.name for t in sim.keywords.all() if t.value == None]
+    out["tags"] = [t.name for t in sim.keywords if t.value == None]
 
     # keywords
-    out["keywords"] = {k.name: k.value for k in sim.keywords.all() if k.value != None}
+    out["keywords"] = {k.name: k.value for k in sim.keywords if k.value != None}
 
     # meta data
     meta = {}
     for meta_group in sim.meta.all():
-        meta[meta_group.name] = {m.name: m.value for m in meta_group.entries.all()}
+        meta[meta_group.name] = {m.name: m.value for m in meta_group.entries}
     out["meta"] = meta
 
     s.close()
