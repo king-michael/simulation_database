@@ -8,18 +8,18 @@
             <br>
 
             <!--select database-->
-            <select id="select_table" name="select_table" onchange="filterTable();buildFilter()" size="{{ databases|count }}">
+            <select id="select_table" name="select_table" onchange="filterTable();buildFilter()" size="5">
                 {%- for db in databases %}
                     <option value="{{ db.path }}">{{ db.path }}</option>
                 {%- endfor %}
             </select>
 
             <!--select group-->
-            <select id="select_group" name="select_group" onchange="filterTable()" size="1">
+            <select id="select_group" name="select_group" onchange="filterTable()" size="5">
             </select>
 
             <!--select tag-->
-            <select id="select_tag" name="select_tag" onchange="filterTable()" size="1">
+            <select id="select_tag" name="select_tag" onchange="filterTable()" size="5">
             </select>
 
             <br>
