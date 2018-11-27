@@ -62,10 +62,33 @@
             // get search query
             var search_query = document.getElementById("search_field").value;
 
+            // get selected columns
+            var columns = "";
+
+            if($( "#show_path" ).prop( "checked" )){
+                columns += " path ";
+            }
+
+            if($( "#show_created_on" ).prop( "checked" )){
+                columns += " created_on ";
+            }
+
+            if($( "#show_added_on" ).prop( "checked" )){
+                columns += " added_on ";
+            }
+
+            if($( "#show_updated_on" ).prop( "checked" )){
+                columns += " updated_on ";
+            }
+
+            if($( "#show_description" ).prop( "checked" )) {
+                columns += " description ";
+            }
+
             //value = value.trim(); // remove any spaces around the text
                 $.ajax({
                     url: "filter",                 // call the search page
-                    data: {db_path: db_path, search_query: search_query, group: g, tag: t},     // get results from search page by sending value
+                    data: {db_path: db_path, search_query: search_query, group: g, tag: t, columns: columns},     // get results from search page by sending value
                     dataType: "html",
                     success: function(data){
                         $("#results").html(data);  // push resulting table to something with id=results
@@ -95,7 +118,7 @@
  								out += "<option value='" + data.groups[i] + "'>" + data.groups[i] + "</option>";
  							}
                         $("#select_group").html(out); // push options to selection tag
-                        
+
 
                         // tags
                         var out = "<option value='none'>None ...</option>";

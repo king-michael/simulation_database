@@ -61,6 +61,9 @@ def filter_table():
     search_query = request.args['search_query'] # get the search query from search field
     group = request.args['group']
     tag = request.args['tag']
+    columns = request.args['columns'] # string of selected columns
+
+    columns = ["entry_id"] + columns.split()
 
     # hotfix until tags get multiselectable
     if group == "" or group == "none":
@@ -123,6 +126,7 @@ def filter_table():
     table["added_on"] = table["added_on"].apply(lambda x: x.strftime('%Y/%m/%d'))
     table["created_on"] = table["created_on"].apply(lambda x: x.strftime('%Y/%m/%d') if x is not None else "--")
 
+    table = table[columns]
     results = table.to_html(classes="table sortable", escape=False) # convert to HTML
 
     return results

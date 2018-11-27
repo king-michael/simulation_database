@@ -22,6 +22,15 @@
             <select id="select_tag" name="select_tag" onchange="filterTable()" size="5">
             </select>
 
+            <!--which columns to show-->
+            <div>
+                <input type="checkbox" id="show_path" value="show_path" onchange="filterTable()" checked> Path<br>
+                <input type="checkbox" id="show_created_on" value="show_created_on" onchange="filterTable()">Created on<br>
+                <input type="checkbox" id="show_added_on" value="show_added_on" onchange="filterTable()">Added on<br>
+                <input type="checkbox" id="show_updated_on" value="show_updated_on" onchange="filterTable()">Updated on<br>
+                <input type="checkbox" id="show_description" value="show_description" onchange="filterTable()" checked>Description<br>
+            </div>
+
             <br>
             <!--search field-->
             <input id="search_field" type="text" onkeyup="filterTable()" placeholder="Search in Entry ID and Description ..." size="100">
