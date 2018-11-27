@@ -45,7 +45,7 @@ def list_all():
 
     # render the template
     return render_template(
-        'view.html',
+        'list.html',
         databases = db.session.query(DBPath).all()
     )
 
