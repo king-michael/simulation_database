@@ -116,6 +116,9 @@ def filter_table():
     # convert table to proper HTML
     pd.set_option('display.max_colwidth', -1) # let pandas print the full entry to HTML table
     table["entry_id"] = table["entry_id"].apply(lambda x: '<a href="details/{1}/{0}/">{0}</a>'.format(x, db_id)) # convert entry ids to links for details view
+    table["updated_on"] = table["updated_on"].apply(lambda x: x.strftime('%Y/%m/%d'))
+    table["added_on"] = table["added_on"].apply(lambda x: x.strftime('%Y/%m/%d'))
+    table["created_on"] = table["created_on"].apply(lambda x: x.strftime('%Y/%m/%d') if x is not None else "--")
     results = table.to_html(classes="table sortable", escape=False) # convert to HTML
 
     return results

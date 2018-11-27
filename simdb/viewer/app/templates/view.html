@@ -7,28 +7,31 @@
             Please select DB:
             <br>
 
-
+            <!--select database-->
             <select id="select_table" name="select_table" onchange="filterTable();buildFilter()" size="{{ databases|count }}">
                 {%- for db in databases %}
                     <option value="{{ db.path }}">{{ db.path }}</option>
                 {%- endfor %}
             </select>
 
-
+            <!--select group-->
             <select id="select_group" name="select_group" onchange="filterTable()" size="1">
             </select>
 
+            <!--select tag-->
             <select id="select_tag" name="select_tag" onchange="filterTable()" size="1">
             </select>
 
-
             <br>
+            <!--search field-->
             <input id="search_field" type="text" onkeyup="filterTable()" placeholder="Search in Entry ID and Description ..." size="100">
 
         {% else %}
             <p>No entries found</h3>
         {% endif %}
 
-        <div id="results"></div> <!-- container where results are pushed in by filterTable() -->
     </div>
+
+    <!-- container where results are pushed in by filterTable() -->
+    <div id="results"></div>
 {% endblock %}
