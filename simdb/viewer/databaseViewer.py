@@ -20,8 +20,8 @@
 __author__ = ["Andrej Berg", "Michael King"]
 __date__ = "18.11.2018"
 
-from app import app, db
-from app.views import *
+from simdb.viewer.app import app, db
+from simdb.viewer.app.views import *
 
 if __name__ == '__main__':
     # Create DB

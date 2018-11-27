@@ -23,7 +23,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
 
-from app.config import Config
+from simdb.app.config import Config
 
 # init Flask object and load configuration
 app = Flask(__name__)
@@ -36,7 +36,7 @@ db = SQLAlchemy(app)
 
 # Import database models with app context
 with app.app_context():
-  from databaseModel import *
+  from simdb.databaseModel import *
 
 migrate = Migrate(app, db)
 manager = Manager(app)
