@@ -110,10 +110,23 @@ def get_keywords(db_path):
 
 
 def get_groups(db_path):
-    """Get all groups in database."""
-    s = open_database(db_path)
-    q = s.query(Groups)
-    groups = [g.name for g in q.all()]
+    """
+    Get all groups in database.
+
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+
+    Returns
+    -------
+    groups : list[str]
+        list of all groups.
+    """
+
+    session = open_database(db_path=db_path)
+    groups = session.query(Groups.name).select_from(Groups).all()
+    session.close()
     return groups
 
 
