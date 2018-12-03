@@ -22,6 +22,7 @@ __date__ = "17.04.2018"
 
 import pandas as pd
 import numpy as np
+import itertools
 import os
 
 from simdb.databaseModel import *
@@ -86,15 +87,26 @@ def get_tags(db_path):
 
 
 def get_keywords(db_path):
-    '''Get all keywords with their values which are used in a database.'''
-    s = open_database(db_path)
-    q = s.query(Keywords)
-    keywords = [e.name for e in q.filter(Keywords.value != None).all()]
-    key_dict = {}
-    for k in np.unique(keywords):
-        key_dict[k] = np.unique([e.value for e in q.filter(Keywords.value != None, Keywords.name == k).all()])
-    s.close()
-    return key_dict
+    """
+    Function to get all keywords with their values as list
+
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+
+    Returns
+    -------
+    tags : dict[str, list]
+        Unique keyword dictonary.
+    """
+
+    session = open_database(db_path=db_path)
+    query = session.query(Keywords.name, Keywords.value).distinct().filter(not_(Keywords.value.is_(None)))
+    keywords = dict((k, list(zip(*v))[1]) for k, v in itertools.groupby(query.all(), lambda x: x[0]))
+    session.close()
+
+    return keywords
 
 
 def get_groups(db_path):
