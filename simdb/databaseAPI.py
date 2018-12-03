@@ -82,7 +82,7 @@ def get_tags(db_path):
     results = query.all()
     session.close()
 
-    return zip(*results)[0]
+    return list(zip(*results))[0]
 
 
 def get_keywords(db_path):
