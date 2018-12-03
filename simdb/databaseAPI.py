@@ -46,12 +46,26 @@ def openDatabase(db_path):
 
 
 def get_tags(db_path):
-    '''Get all tags which are used in a database.'''
-    s = openDatabase(db_path)
-    q = s.query(Keywords).filter(Keywords.value == None)
-    s.close()
+    """
+    Function to get all tags used in a database.
 
-    return list(np.unique([e.name for e in q.all()]))
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+
+    Returns
+    -------
+    tags : Tuple[str]
+        Unique tag list.
+    """
+
+    session = openDatabase(db_path=db_path)
+    query = session.query(distinct(Keywords.name)).select_from(Keywords).filter(Keywords.value.is_(None))
+    results = query.all()
+    session.close()
+
+    return zip(*results)[0]
 
 
 def get_keywords(db_path):

@@ -11,7 +11,7 @@ from datetime import datetime
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import not_, and_
+from sqlalchemy import not_, and_, distinct
 from sqlalchemy import Table
 from sqlalchemy import exists
 # Base class
