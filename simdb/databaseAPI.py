@@ -35,10 +35,27 @@ def listed(alist):
     return ",".join("{}".format(i) for i in alist)
 
 
-def openDatabase(db_path):
-    '''Open data base and return session.'''
+def open_database(db_path):
+    """
+    Open data base and return session.
+
+    Parameters
+    ----------
+    db_path : str
+        Path to database.
+
+    Returns
+    -------
+    session : sessionmaker
+        SQL session
+
+    Raises
+    ------
+    OSError
+        If ``db_path`` not found.
+    """
     if not os.path.exists(db_path):
-        raise "%s does not exist."
+        raise OSError("%s does not exist." % db_path)
     engine = create_engine('sqlite:///{}'.format(db_path))
     Session = sessionmaker(bind=engine)
     session = Session()
@@ -60,7 +77,7 @@ def get_tags(db_path):
         Unique tag list.
     """
 
-    session = openDatabase(db_path=db_path)
+    session = open_database(db_path=db_path)
     query = session.query(distinct(Keywords.name)).select_from(Keywords).filter(Keywords.value.is_(None))
     results = query.all()
     session.close()
@@ -70,7 +87,7 @@ def get_tags(db_path):
 
 def get_keywords(db_path):
     '''Get all keywords with their values which are used in a database.'''
-    s = openDatabase(db_path)
+    s = open_database(db_path)
     q = s.query(Keywords)
     keywords = [e.name for e in q.filter(Keywords.value != None).all()]
     key_dict = {}
@@ -82,7 +99,7 @@ def get_keywords(db_path):
 
 def get_groups(db_path):
     """Get all groups in database."""
-    s = openDatabase(db_path)
+    s = open_database(db_path)
     q = s.query(Groups)
     groups = [g.name for g in q.all()]
     return groups
@@ -91,7 +108,7 @@ def get_groups(db_path):
 def getEntryTable(db_path, columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"], load_keys=True, load_tags=True):
     '''Get a pandas DataFrame with all entries in a data base and
     keywords and tags.'''
-    s = openDatabase(db_path)
+    s = open_database(db_path)
 
     # get DB tables as pandas DataFrames
     main = pd.read_sql_table("main", s.bind)[["id"] + columns].set_index('id')
@@ -135,7 +152,7 @@ def add_to_group(db_path, entry_id, groupname):
         return False
 
     # open databae
-    s = openDatabase(db_path)
+    s = open_database(db_path)
 
     # get group if already in DB or create new group
     try:
@@ -170,7 +187,7 @@ def get_entry_table(db_path, group_names=None, tags=None, columns=None):
     """
 
     # open databae
-    s = openDatabase(db_path)
+    s = open_database(db_path)
     q = s.query(Main).options(noload(Main.keywords))
 
     # filter by groups
@@ -216,7 +233,7 @@ def get_entry_details(db_path, entry_id):
 
     """
 
-    s = openDatabase(db_path)
+    s = open_database(db_path)
 
     # find entry
     try:
@@ -271,7 +288,7 @@ def remove_from_group(db_path, entry_id, group_name):
         return False
 
     # open databae
-    s = openDatabase(db_path)
+    s = open_database(db_path)
 
     # get group if in DB
     try:
@@ -420,7 +437,7 @@ def store_dict(entry_id,
 # used in app.py !
 
 def getEntryDetails(db_path, entry_id):
-    s = openDatabase(db_path)
+    s = open_database(db_path)
 
     sim = s.query(Main).filter(Main.entry_id == entry_id).one()
     d = sim.__dict__
@@ -435,7 +452,7 @@ def getEntryDetails(db_path, entry_id):
 
 
 def getEntryKeywords(db_path, entry_id):
-    s = openDatabase(db_path)
+    s = open_database(db_path)
 
     sim = s.query(Main).filter(Main.entry_id == entry_id).one()
     keywords = dict((k.name, k.value) for k in sim.keywords
@@ -445,7 +462,7 @@ def getEntryKeywords(db_path, entry_id):
     return keywords
 
 def getEntryTags(db_path, entry_id):
-    s = openDatabase(db_path)
+    s = open_database(db_path)
 
     sim = s.query(Main).filter(Main.entry_id == entry_id).one()
     tags = [t.name for t in sim.keywords if t.value == "None" or t.value is None]
@@ -455,7 +472,7 @@ def getEntryTags(db_path, entry_id):
 
 
 def getEntryMeta(db_path, entry_id):
-    s = openDatabase(db_path)
+    s = open_database(db_path)
 
     sim = s.query(Main).filter(Main.entry_id == entry_id).one()
 
