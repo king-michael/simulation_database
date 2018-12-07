@@ -130,76 +130,6 @@ def get_groups(db_path):
     return groups
 
 
-def getEntryTable(db_path, columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"], load_keys=True, load_tags=True):
-    '''Get a pandas DataFrame with all entries in a data base and
-    keywords and tags.'''
-    s = open_database(db_path)
-
-    # get DB tables as pandas DataFrames
-    main = pd.read_sql_table("main", s.bind)[["id"] + columns].set_index('id')
-    keywords_raw = pd.read_sql_table("keywords", s.bind)
-
-    if load_keys:
-        keywords = keywords_raw[keywords_raw['value'].notna()]
-        if keywords.size != 0:
-            # inner join to get the connection between entries and keywords
-            #m = pd.merge(main, keywords, right_on="main_id", how="inner")
-            # pivot table reduces it to columns
-            p = keywords.pivot(index='main_id', columns='name')["value"]
-            main = pd.concat([main, p], axis=1)
-
-    if load_tags:
-        tags = keywords_raw[~keywords_raw['value'].notna()]
-        if tags.notna().size != 0:
-            tags = tags.drop('value', axis=1).groupby("main_id").agg({"name": listed}).rename(index=int, columns={"name": "tags"})
-            main = pd.concat([main, tags], axis=1)
-
-    s.close()
-
-    return main
-
-
-def add_to_group(db_path, entry_id, groupname):
-    """Add all simulations in entry_id to group.
-
-    Args:
-        db_path: string, path to database
-        entry_id: list, entry IDs of simulations which
-                  should be added to group
-        groupname: string, name of group
-    """
-    # check input
-    if len(entry_id) == 0:
-        print("No entries selected in entry_id.")
-        return False
-    if not hasattr(entry_id, "__iter__"):
-        print("entry_id is not iterable.")
-        return False
-
-    # open databae
-    s = open_database(db_path)
-
-    # get group if already in DB or create new group
-    try:
-        group = s.query(Groups).filter(Groups.name == groupname).one()
-    except NoResultFound:
-        group = Groups(name=groupname)
-        s.add(group)
-        s.commit()
-
-    entries = s.query(Main).filter(Main.entry_id.in_(entry_id)).all()
-
-    # add
-    for entry in entries:
-        group.entries.append(entry)
-
-    # commit and close
-    s.commit()
-    s.close()
-
-    return True
-
-
 def get_entry_table(db_path, group_names=None, tags=None, columns=None):
     """Get pandas table of all entries meeting the selection creteria.
     This is maybe a better way to get entries since selection is on SQL level.
@@ -294,6 +224,272 @@ def get_entry_details(db_path, entry_id):
         pass
 
     return out
+
+
+def add_tag(db_path, entry_id, tag_name):
+    """
+    Add tag to entry.
+
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+    entry_id : str
+        Entry ID in database
+    tag_name : str
+        Tag name
+
+    Returns
+    -------
+    True if tag was added, otherwise False
+    """
+
+    s = open_database(db_path)
+    status = False
+
+    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
+    if entry:
+
+        # tag already there
+        if entry.keywords_query.filter_by(name=tag_name, value=None).first():
+            print("Tag already assigned to entry")
+
+        # tagname used for keyword
+        elif entry.keywords_query.filter_by(name=tag_name).first():
+            print("Tag is already used for keyword. You can't add this tag. One could say that this problem might be avoided if one would use two separate tables for tags and keywords.")
+
+        # add tag
+        else:
+            tag = Keywords(name=tag_name)
+            entry.keywords.append(tag)
+            s.commit()
+            status = True
+
+    s.close()
+
+    return status
+
+
+def remove_tag(db_path, entry_id, tag_name):
+    """
+    Remove tag from entry.
+
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+    entry_id : str
+        Entry ID in database
+    tag_name : str
+        Tag name
+
+    Returns
+    -------
+    True if tag was removed otherwise False
+    """
+
+    s = open_database(db_path)
+    status = False
+
+    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
+    tag = entry.keywords_query.filter_by(name=tag_name, value=None).first()
+    if entry and tag:
+        entry.keywords.remove(tag)
+        s.commit()
+        status = True
+
+    s.close()
+
+    return status
+
+
+def add_keyword(db_path, entry_id, **kwargs):
+    """
+    Add keywords to entry.
+
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+    entry_id : str
+        Entry ID in database
+    **kwargs : kwargs
+        keyword1="value1", keyword2="value2"
+
+    Returns
+    -------
+    True
+    """
+
+    s = open_database(db_path)
+    status = False
+
+    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
+    if entry:
+        status = []
+        for name, value in kwargs.items():
+
+            # keyword is already there but might be a tag or might have a different value
+            if entry.keywords_query.filter_by(name=name).first():
+
+                # keyword is already there but a tag
+                if entry.keywords_query.filter_by(name=name, value=None).first():
+                    print(
+                        "You are trying to assing a keyword which is already used for a tag. One could say that this problem might be avoided if one would use two separate tables for tags and keywords.")
+                    status.append(False)
+
+                # keyword is already there
+                else:
+                    keyword = entry.keywords_query.filter_by(name=name).first()
+                    print("Keyword already there: {} = {}".format(keyword.name, keyword.value))
+                    status.append(False)
+
+            # keyword is not there
+            else:
+                entry.keywords.append(Keywords(name=name, value=value))
+                s.commit()
+                status.append(True)
+
+        status = np.any(status)
+
+    s.close()
+
+    return status
+
+
+def alter_keyword(db_path, entry_id, **kwargs):
+    """
+    Alter existing keywords of entry.
+
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+    entry_id : str
+        Entry ID in database
+    **kwargs : kwargs
+        keyword = "value": Alter keyword to value
+
+    Returns
+    -------
+    True
+    """
+
+    s = open_database(db_path)
+    status = False
+
+    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
+    if entry:
+        status = []
+        for name, value in kwargs.items():
+
+            # keyword is there
+            keyword = entry.keywords_query.filter_by(name=name).first()
+            if keyword and keyword.value is not None:
+
+                keyword.value = value
+                s.commit()
+                status.append(True)
+
+            # keyword is not there
+            else:
+                status.append(False)
+
+        status = np.any(status)
+
+    s.close()
+
+    return status
+
+
+def remove_keyword(db_path, entry_id, **kwargs):
+    """
+    Remove keywords from entry.
+
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+    entry_id : str
+        Entry ID in database
+    **kwargs : kwargs
+        keyword = "value": Keyword is given, remove if entry has given value
+        keyword = None : Remove keyword independent of value
+
+    Returns
+    -------
+    True
+    """
+
+    s = open_database(db_path)
+    status = False
+
+    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
+    if entry:
+        status = []
+        for name, value in kwargs.items():
+
+            # keyword is there
+            keyword = entry.keywords_query.filter_by(name=name).first()
+            if keyword:
+
+                # keyword might be a tag
+                if keyword.value is not None and (value == None or value == keyword.value):
+                    entry.keywords.remove(keyword)
+                    s.commit()
+                    status.append(True)
+
+            # keyword is not there
+            else:
+                status.append(False)
+        
+        status = np.any(status)
+
+    s.close()
+
+    return status
+
+
+def add_to_group(db_path, entry_id, groupname):
+    """Add all simulations in entry_id to group.
+
+    Args:
+        db_path: string, path to database
+        entry_id: list, entry IDs of simulations which
+                  should be added to group
+        groupname: string, name of group
+    """
+    # check input
+    if len(entry_id) == 0:
+        print("No entries selected in entry_id.")
+        return False
+    if not hasattr(entry_id, "__iter__"):
+        print("entry_id is not iterable.")
+        return False
+
+    # open databae
+    s = open_database(db_path)
+
+    # get group if already in DB or create new group
+    try:
+        group = s.query(Groups).filter(Groups.name == groupname).one()
+    except NoResultFound:
+        group = Groups(name=groupname)
+        s.add(group)
+        s.commit()
+
+    entries = s.query(Main).filter(Main.entry_id.in_(entry_id)).all()
+
+    # add
+    for entry in entries:
+        group.entries.append(entry)
+
+    # commit and close
+    s.commit()
+    s.close()
+
+    return True
+
 
 def remove_from_group(db_path, entry_id, group_name):
     """Remove all simulations in entry_id from group.
@@ -460,6 +656,35 @@ def store_dict(entry_id,
 # after checking that they are not used any more
 # Micha: please do not remove them. get_entry_keywords / tags could be usefull
 # used in app.py !
+
+def getEntryTable(db_path, columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"], load_keys=True, load_tags=True):
+    '''Get a pandas DataFrame with all entries in a data base and
+    keywords and tags.'''
+    s = open_database(db_path)
+
+    # get DB tables as pandas DataFrames
+    main = pd.read_sql_table("main", s.bind)[["id"] + columns].set_index('id')
+    keywords_raw = pd.read_sql_table("keywords", s.bind)
+
+    if load_keys:
+        keywords = keywords_raw[keywords_raw['value'].notna()]
+        if keywords.size != 0:
+            # inner join to get the connection between entries and keywords
+            #m = pd.merge(main, keywords, right_on="main_id", how="inner")
+            # pivot table reduces it to columns
+            p = keywords.pivot(index='main_id', columns='name')["value"]
+            main = pd.concat([main, p], axis=1)
+
+    if load_tags:
+        tags = keywords_raw[~keywords_raw['value'].notna()]
+        if tags.notna().size != 0:
+            tags = tags.drop('value', axis=1).groupby("main_id").agg({"name": listed}).rename(index=int, columns={"name": "tags"})
+            main = pd.concat([main, tags], axis=1)
+
+    s.close()
+
+    return main
+
 
 def getEntryDetails(db_path, entry_id):
     s = open_database(db_path)
