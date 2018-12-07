@@ -4,7 +4,7 @@ setup(
     name='simulation_database',
     version='v0.1.0beta',
     packages=['simdb',
-              'simdb.app',
+              'simdb.viewer',
               'simdb.utils',
               ],
     url='https://github.com/king-michael/simulation_database',
