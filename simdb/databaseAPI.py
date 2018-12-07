@@ -83,7 +83,7 @@ def get_tags(db_path):
     results = query.all()
     session.close()
 
-    return list(zip(*results))[0]
+    return next(iter(zip(*results)), [])
 
 
 def get_keywords(db_path):
@@ -442,7 +442,7 @@ def remove_keyword(db_path, entry_id, **kwargs):
             # keyword is not there
             else:
                 status.append(False)
-        
+
         status = np.any(status)
 
     s.close()
