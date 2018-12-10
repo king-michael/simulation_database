@@ -952,8 +952,19 @@ structure_folders.append(
                         },
                               subfolders=[
                                   Struc('model.*', mapping={'.*': partial(dict_mapping, adict=dict_map_ff)})
-                              ])
+                              ])  # nucleation - subfolders
                     ]),  # 2018_cg_model - nucleation
+              Struc('nanoparticles', [Keyword('nanoparticle')],
+                    subfolders=[
+                        Struc('.*', mapping={
+                            '.*' : [general_mapping,
+                                    partial(dict_mapping, adict=_in_text(dict_solvation_state)),
+                                    partial(map_mapping, list_words=[], adict=map_systems), ]
+                        },
+                              subfolders=[
+                                  Struc('model.*', mapping={'.*': partial(dict_mapping, adict=dict_map_ff)})
+                              ]) # nanoparticles - subfolders
+                    ]) # 2018_cg_model - nanoparticles
           ]),  # 2018_cg_model -> subfolders
 ),  # 2018_cg_model
 
@@ -980,7 +991,7 @@ structure_folders.append(
                                                     partial(map_mapping, list_words=[], adict=map_systems), ],
                                                 '64Ksystem': lambda x: [Keyword('n_atoms', 64000),
                                                                         Keyword('n(ions)', 400),
-                                                                        Keyword('c(ions)', "{} M")]
+                                                                        Keyword('c(ions)', "{} M".format(0.35))]
                                             },
                                                   subfolders=[
                                                       Struc('model.*', mapping={
