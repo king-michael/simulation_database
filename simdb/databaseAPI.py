@@ -130,6 +130,36 @@ def get_groups(db_path):
     return groups
 
 
+def sim2dict(sim):
+    """
+    Function to create a dictionary from a sim object.
+
+    Notes
+    -----
+    sim_dict['children'] :
+        returns a list of all `sim_dict(child)`
+    sim_dict['parents'] :
+        only returns a list of the parent `entry_id`
+
+    Parameters
+    ----------
+    sim : Main
+        Main table object
+
+    Returns
+    -------
+    sim_dict : dict
+        sim as dictionary
+
+    """
+    sim_dict = dict((c.name, getattr(sim, c.name)) for c in sim.__table__.columns)
+    sim_dict['parents'] = sorted([entry.parent.entry_id for entry in sim.parents])
+
+    sim_dict['children'] = sorted([sim2dict(entry.child) for entry in sim.children],
+                                  key=lambda x: x['entry_id'])
+    sim_dict['keywords'] = dict((k.name, k.value) for k in sim.keywords)
+    return sim_dict
+
 def get_entry_table(db_path, group_names=None, tags=None, columns=None):
     """Get pandas table of all entries meeting the selection creteria.
     This is maybe a better way to get entries since selection is on SQL level.
