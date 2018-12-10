@@ -480,87 +480,286 @@ def remove_keyword(db_path, entry_id, **kwargs):
     return status
 
 
-def add_to_group(db_path, entry_id, groupname):
-    """Add all simulations in entry_id to group.
+def add_group(db_path, entry_id, group_name):
+    """Add simulation to group.
 
-    Args:
-        db_path: string, path to database
-        entry_id: list, entry IDs of simulations which
-                  should be added to group
-        groupname: string, name of group
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+    entry_id : str
+        Entry ID in database
+    group_name: str
+        Name of group
+
+    Returns
+    -------
+    True if entry was added to group, otherwise False.
     """
-    # check input
-    if len(entry_id) == 0:
-        print("No entries selected in entry_id.")
-        return False
-    if not hasattr(entry_id, "__iter__"):
-        print("entry_id is not iterable.")
-        return False
 
     # open databae
     s = open_database(db_path)
+    status = False
 
-    # get group if already in DB or create new group
-    try:
-        group = s.query(Groups).filter(Groups.name == groupname).one()
-    except NoResultFound:
-        group = Groups(name=groupname)
-        s.add(group)
-        s.commit()
+    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
 
-    entries = s.query(Main).filter(Main.entry_id.in_(entry_id)).all()
+    if entry:
 
-    # add
-    for entry in entries:
+        # get group if already in DB or create new group
+        group = s.query(Groups).filter(Groups.name == group_name).first()
+        if not group:
+            group = Groups(name=group_name)
+            s.add(group)
+            s.commit()
+
         group.entries.append(entry)
+        s.commit()
+        status = True
 
-    # commit and close
-    s.commit()
     s.close()
 
-    return True
+    return status
 
 
-def remove_from_group(db_path, entry_id, group_name):
-    """Remove all simulations in entry_id from group.
+def remove_group(db_path, entry_id, group_name):
+    """Remove simulation from group.
 
-    Args:
-        db_path: string, path to database
-        entry_id: list, entry IDs of simulations which
-                  should be added to group
-        group_name: string, name of group
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+    entry_id : str
+        Entry ID in database
+    group_name: str
+        Name of group
+
+    Returns
+    -------
+    True if entry was removed from group, otherwise False.
     """
-    # check input
-    if len(entry_id) == 0:
-        print("No entries selected in entry_id.")
-        return False
-    if not hasattr(entry_id, "__iter__"):
-        print("entry_id is not iterable.")
-        return False
 
     # open databae
     s = open_database(db_path)
+    status = False
 
-    # get group if in DB
-    try:
-        group = s.query(Groups).filter(Groups.name == group_name).one()
-    except NoResultFound:
-        print("Group {} was not found in DB".format())
+    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
+    group = s.query(Groups).filter(Groups.name == group_name).first()
 
-    # get only those entries which are in group
-    entries = s.query(Main).filter(Main.groups.any(id=group.id)).filter(Main.entry_id.in_(entry_id)).all()
+    if group:
+        if entry in group.entries:
+            group.entries.remove(entry)
+            s.commit()
+            status = True
 
-    # remove
-    for entry in entries:
-        group.entries.remove(entry)
-
-    # commit and close
-    s.commit()
     s.close()
 
-    return True
+    return status
 
 
+def add_meta_group(db_path, entry_id, meta_group_name):
+    """Add a meta information group/block to entry.
+
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+    entry_id : str
+        Entry ID in database
+    meta_group_name: str
+        Name of meta group, e.g. Thermostat, Barostat
+
+    Returns
+    -------
+    True if meta group was added to entry, otherwise False.
+    """
+
+    # open databae
+    s = open_database(db_path)
+    status = False
+
+    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
+    meta_group = entry.meta.filter_by(name=meta_group_name).first()
+
+    if entry and not meta_group:
+        meta_group = MetaGroups(name=meta_group_name)
+        entry.meta.append(meta_group)
+
+        s.commit()
+        status = True
+
+    s.close()
+
+    return status
+
+
+def remove_meta_group(db_path, entry_id, meta_group_name):
+    """Remove a meta information group/block from entry.
+
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+    entry_id : str
+        Entry ID in database
+    meta_group_name: str
+        Name of meta group, e.g. Thermostat, Barostat
+
+    Returns
+    -------
+    True if meta group was removed from group, otherwise False.
+    """
+
+    # open databae
+    s = open_database(db_path)
+    status = False
+
+    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
+    meta_group = entry.meta.filter_by(name=meta_group_name).first()
+
+    if entry and meta_group:
+        entry.meta.remove(meta_group)
+
+        s.commit()
+        status = True
+
+    s.close()
+
+    return status
+
+
+def add_meta_data(db_path, entry_id, meta_group_name, **kwargs):
+    """
+    Add meta data to entry.
+
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+    entry_id : str
+        Entry ID in database
+    meta_group_name: str
+        Name of meta group, e.g. Thermostat, Barostat
+    **kwargs : kwargs
+        keyword1="value1", keyword2="value2"
+
+    Returns
+    -------
+    True
+    """
+
+    # open databae
+    s = open_database(db_path)
+    status = False
+
+    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
+    meta_group = entry.meta.filter_by(name=meta_group_name).first()
+
+    if entry and meta_group:
+        status = []
+        for name, value in kwargs.items():
+            meta_entry = meta_group.entries.filter_by(name=name).first()
+
+            if not meta_entry:
+                meta_group.entries.append(MetaEntry(name=name, value=value))
+                s.commit()
+                status.append(True)
+
+        status = np.any(status)
+
+    s.close()
+
+    return status
+
+
+def alter_meta_data(db_path, entry_id, meta_group_name, **kwargs):
+    """
+    Alter meta data in entry.
+
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+    entry_id : str
+        Entry ID in database
+    meta_group_name: str
+        Name of meta group, e.g. Thermostat, Barostat
+    **kwargs : kwargs
+        Alter keyword to value
+        keyword = "value"
+
+    Returns
+    -------
+    True
+    """
+
+    # open databae
+    s = open_database(db_path)
+    status = False
+
+    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
+    meta_group = entry.meta.filter_by(name=meta_group_name).first()
+
+    if entry and meta_group:
+        status = []
+        for name, value in kwargs.items():
+            meta_entry = meta_group.entries.filter_by(name=name).first()
+
+            if meta_entry:
+                meta_entry.value = value
+                s.commit()
+                status.append(True)
+
+        status = np.any(status)
+
+    s.close()
+
+    return status
+
+
+def remove_meta_data(db_path, entry_id, meta_group_name, **kwargs):
+    """
+    Remove meta data in entry.
+
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+    entry_id : str
+        Entry ID in database
+    meta_group_name: str
+        Name of meta group, e.g. Thermostat, Barostat
+    **kwargs : kwargs
+        keyword = "value": Value is given, remove if entry has given value
+        keyword = None : Remove meta data entry independent of value
+
+    Returns
+    -------
+    True
+    """
+
+    # open databae
+    s = open_database(db_path)
+    status = False
+
+    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
+    meta_group = entry.meta.filter_by(name=meta_group_name).first()
+
+    if entry and meta_group:
+        status = []
+        for name, value in kwargs.items():
+            meta_entry = meta_group.entries.filter_by(name=name).first()
+
+            if meta_entry:
+                if value is None or meta_entry.value == value:
+                    meta_group.entries.remove(meta_entry)
+                    s.commit()
+                    status.append(True)
+
+        status = np.any(status)
+
+    s.close()
+
+    return status
 def selectByKeyword(table, name, value):
     '''Get mask for selection of entries by keyword.'''
     return table[name] == value
