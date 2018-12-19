@@ -229,19 +229,6 @@ class MetaEntry(Base):
             self.name,
             self.value)
 
-
-def establish_session(db_address='sqlite:///:memory:'):
-    '''
-    :param db_address: ['sqlite:///:memory:', 'sqlite:///./test.db']
-    :return: session
-    '''
-    engine = create_engine(db_address, echo=False) #  if we want spam
-    # Establishing a session
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    return session
-
-
 def setup_database(engine):
     """function to create the database"""
     # create Tables

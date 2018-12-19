@@ -25,18 +25,16 @@ import numpy as np
 import itertools
 import os
 
+from typing import Union, List
 from simdb.databaseModel import *
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import noload
 from sqlalchemy import or_, and_
 
 
-def listed(alist):
-    '''Convert list to comma seperated string.'''
-    return ",".join("{}".format(i) for i in alist)
+Session = sessionmaker()
 
-
-def open_database(db_path):
+def connect_database(db_path):
     """
     Open data base and return session.
 
@@ -55,45 +53,27 @@ def open_database(db_path):
     OSError
         If ``db_path`` not found.
     """
+
     if not os.path.exists(db_path):
         raise OSError("%s does not exist." % db_path)
     engine = create_engine('sqlite:///{}'.format(db_path))
-    Session = sessionmaker(bind=engine)
+    Session.configure(bind=engine)
     session = Session()
     return session
 
 
-def get_tags(db_path):
-    """
-    Function to get all tags used in a database.
+# =========================================================================== #
+# get_all_functions
+# =========================================================================== #
 
-    Parameters
-    ----------
-    db_path : str
-        Path to the database
-
-    Returns
-    -------
-    tags : Tuple[str]
-        Unique tag list.
-    """
-
-    session = open_database(db_path=db_path)
-    query = session.query(distinct(Keywords.name)).select_from(Keywords).filter(Keywords.value.is_(None))
-    results = query.all()
-    session.close()
-
-    return next(iter(zip(*results)), [])
-
-
-def get_keywords(db_path):
+def get_all_keywords(session):
     """
     Function to get all keywords with their values as list
 
     Parameters
     ----------
-    db_path : str
-        Path to the database
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
 
     Returns
     -------
@@ -101,22 +81,20 @@ def get_keywords(db_path):
         Unique keyword dictonary.
     """
 
-    session = open_database(db_path=db_path)
-    query = session.query(Keywords.name, Keywords.value).distinct().filter(not_(Keywords.value.is_(None)))
+    query = session.query(Keywords.name, Keywords.value).distinct()
     keywords = dict((k, list(zip(*v))[1]) for k, v in itertools.groupby(query.all(), lambda x: x[0]))
-    session.close()
 
     return keywords
 
 
-def get_groups(db_path):
+def get_all_groups(session):
     """
     Get all groups in database.
 
     Parameters
     ----------
-    db_path : str
-        Path to the database
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
 
     Returns
     -------
@@ -124,11 +102,140 @@ def get_groups(db_path):
         list of all groups.
     """
 
-    session = open_database(db_path=db_path)
     groups = session.query(Groups.name).select_from(Groups).all()
-    session.close()
     return groups
 
+# =========================================================================== #
+# get/set/update keywords
+# =========================================================================== #
+
+def get_keywords(session, entry_id):
+    """
+    Function to get the keywords for a entry_id
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    entry_id : str
+        entry id
+
+    Returns
+    -------
+    keywords : dict
+        Keywords for the entry with `entry_id`
+    """
+    query = session.query(Keywords.name, Keywords.value).join(Main).filter(Main.entry_id == entry_id)
+    keywords = dict(query.all())
+    return keywords
+
+
+def add_single_keyword(session, entry_id, name, value=None, unqiue=True, main_id=None):
+    """
+    Function to add a single keyword
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    entry_id : str
+        entry id
+    name : str
+        Name of the keyword.
+    value : Union[float,int,str,bool,None]
+        Value of the keyword. (Default is None.)
+    unqiue : bool
+        Keyword will be assumed to be unqiue. (Default is `True`.)
+    main_id : int or None
+        ID in the `main` table. (Default is `None`.)
+    """
+    # get keyword if unique else None
+    keyword = session.query(Keywords).join(Main)\
+                .filter(Keywords.name == name)\
+                .filter(Main.entry_id == entry_id)\
+                .one_or_none() if unqiue else None
+
+    # create keyword if not there else update
+    if keyword is None:
+        if main_id is None:
+            main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
+        keyword = Keywords(name=name, value=value, main_id=main_id)
+    else:
+        keyword.value = value
+    session.add(keyword)
+
+def update_keywords(session, entry_id, **kwargs):
+    """
+    Function to update / add keywords.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    entry_id : str
+        entry id
+    kwargs : dict
+        keyword name and value
+    """
+
+    keywords = session.query(Keywords).join(Main)\
+                .filter(Main.entry_id == entry_id)\
+                .filter(Keywords.name.in_(kwargs.keys())).all()
+    for keyword in keywords:
+        keyword.value = kwargs.pop(keyword.name)
+    if len(keywords) != 0:
+        main_id = keywords[0].main_id
+    else:
+        main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
+        keywords = []
+    for name, value in kwargs.items():
+        keywords.append(Keywords(name=name, value=value, main_id=main_id))
+    session.add_all(keywords)
+
+def set_keywords(session, entry_id, **kwargs):
+    """
+    Function to set keywords. Overwrites the old.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    entry_id : str
+        entry id
+    kwargs : dict
+        keyword name and value
+    """
+    main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
+    session.query(Keywords).filter(Keywords.main_id == main_id).delete()
+    for name, value in kwargs.items():
+        session.add(Keywords(name=name, value=value, main_id=main_id))
+
+def delete_keywords(session, entry_id, *args):
+    """
+    Function to delete keywords.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    entry_id : str
+        entry id
+    args : List[str]
+
+    Returns
+    -------
+
+    """
+    keywords = session.query(Keywords).join(Main)\
+                .filter(Main.entry_id == entry_id)\
+                .filter(Keywords.name.in_(args)).all()
+    for keyword in keywords:
+        session.delete(keyword)
+
+
+# =========================================================================== #
+# utility functions
+# =========================================================================== #
 
 def sim2dict(sim):
     """
@@ -160,6 +267,8 @@ def sim2dict(sim):
     sim_dict['keywords'] = dict((k.name, k.value) for k in sim.keywords)
     return sim_dict
 
+
+
 def get_entry_table(db_path, group_names=None, tags=None, columns=None):
     """Get pandas table of all entries meeting the selection creteria.
     This is maybe a better way to get entries since selection is on SQL level.
@@ -172,7 +281,7 @@ def get_entry_table(db_path, group_names=None, tags=None, columns=None):
     """
 
     # open databae
-    s = open_database(db_path)
+    s = connect_database(db_path)
     q = s.query(Main).options(noload(Main.keywords))
 
     # filter by groups
@@ -218,7 +327,7 @@ def get_entry_details(db_path, entry_id):
 
     """
 
-    s = open_database(db_path)
+    s = connect_database(db_path)
 
     # find entry
     try:
@@ -256,228 +365,7 @@ def get_entry_details(db_path, entry_id):
     return out
 
 
-def add_tag(db_path, entry_id, tag_name):
-    """
-    Add tag to entry.
 
-    Parameters
-    ----------
-    db_path : str
-        Path to the database
-    entry_id : str
-        Entry ID in database
-    tag_name : str
-        Tag name
-
-    Returns
-    -------
-    True if tag was added, otherwise False
-    """
-
-    s = open_database(db_path)
-    status = False
-
-    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
-    if entry:
-
-        # tag already there
-        if entry.keywords_query.filter_by(name=tag_name, value=None).first():
-            print("Tag already assigned to entry")
-
-        # tagname used for keyword
-        elif entry.keywords_query.filter_by(name=tag_name).first():
-            print("Tag is already used for keyword. You can't add this tag. One could say that this problem might be avoided if one would use two separate tables for tags and keywords.")
-
-        # add tag
-        else:
-            tag = Keywords(name=tag_name)
-            entry.keywords.append(tag)
-            s.commit()
-            status = True
-
-    s.close()
-
-    return status
-
-
-def remove_tag(db_path, entry_id, tag_name):
-    """
-    Remove tag from entry.
-
-    Parameters
-    ----------
-    db_path : str
-        Path to the database
-    entry_id : str
-        Entry ID in database
-    tag_name : str
-        Tag name
-
-    Returns
-    -------
-    True if tag was removed otherwise False
-    """
-
-    s = open_database(db_path)
-    status = False
-
-    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
-    tag = entry.keywords_query.filter_by(name=tag_name, value=None).first()
-    if entry and tag:
-        entry.keywords.remove(tag)
-        s.commit()
-        status = True
-
-    s.close()
-
-    return status
-
-
-def add_keyword(db_path, entry_id, **kwargs):
-    """
-    Add keywords to entry.
-
-    Parameters
-    ----------
-    db_path : str
-        Path to the database
-    entry_id : str
-        Entry ID in database
-    **kwargs : kwargs
-        keyword1="value1", keyword2="value2"
-
-    Returns
-    -------
-    True
-    """
-
-    s = open_database(db_path)
-    status = False
-
-    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
-    if entry:
-        status = []
-        for name, value in kwargs.items():
-
-            # keyword is already there but might be a tag or might have a different value
-            if entry.keywords_query.filter_by(name=name).first():
-
-                # keyword is already there but a tag
-                if entry.keywords_query.filter_by(name=name, value=None).first():
-                    print(
-                        "You are trying to assing a keyword which is already used for a tag. One could say that this problem might be avoided if one would use two separate tables for tags and keywords.")
-                    status.append(False)
-
-                # keyword is already there
-                else:
-                    keyword = entry.keywords_query.filter_by(name=name).first()
-                    print("Keyword already there: {} = {}".format(keyword.name, keyword.value))
-                    status.append(False)
-
-            # keyword is not there
-            else:
-                entry.keywords.append(Keywords(name=name, value=value))
-                s.commit()
-                status.append(True)
-
-        status = np.any(status)
-
-    s.close()
-
-    return status
-
-
-def alter_keyword(db_path, entry_id, **kwargs):
-    """
-    Alter existing keywords of entry.
-
-    Parameters
-    ----------
-    db_path : str
-        Path to the database
-    entry_id : str
-        Entry ID in database
-    **kwargs : kwargs
-        keyword = "value": Alter keyword to value
-
-    Returns
-    -------
-    True
-    """
-
-    s = open_database(db_path)
-    status = False
-
-    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
-    if entry:
-        status = []
-        for name, value in kwargs.items():
-
-            # keyword is there
-            keyword = entry.keywords_query.filter_by(name=name).first()
-            if keyword and keyword.value is not None:
-
-                keyword.value = value
-                s.commit()
-                status.append(True)
-
-            # keyword is not there
-            else:
-                status.append(False)
-
-        status = np.any(status)
-
-    s.close()
-
-    return status
-
-
-def remove_keyword(db_path, entry_id, **kwargs):
-    """
-    Remove keywords from entry.
-
-    Parameters
-    ----------
-    db_path : str
-        Path to the database
-    entry_id : str
-        Entry ID in database
-    **kwargs : kwargs
-        keyword = "value": Keyword is given, remove if entry has given value
-        keyword = None : Remove keyword independent of value
-
-    Returns
-    -------
-    True
-    """
-
-    s = open_database(db_path)
-    status = False
-
-    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
-    if entry:
-        status = []
-        for name, value in kwargs.items():
-
-            # keyword is there
-            keyword = entry.keywords_query.filter_by(name=name).first()
-            if keyword:
-
-                # keyword might be a tag
-                if keyword.value is not None and (value == None or value == keyword.value):
-                    entry.keywords.remove(keyword)
-                    s.commit()
-                    status.append(True)
-
-            # keyword is not there
-            else:
-                status.append(False)
-
-        status = np.any(status)
-
-    s.close()
-
-    return status
 
 
 def add_group(db_path, entry_id, group_name):
@@ -498,7 +386,7 @@ def add_group(db_path, entry_id, group_name):
     """
 
     # open databae
-    s = open_database(db_path)
+    s = connect_database(db_path)
     status = False
 
     entry = s.query(Main).filter(Main.entry_id == entry_id).first()
@@ -539,7 +427,7 @@ def remove_group(db_path, entry_id, group_name):
     """
 
     # open databae
-    s = open_database(db_path)
+    s = connect_database(db_path)
     status = False
 
     entry = s.query(Main).filter(Main.entry_id == entry_id).first()
@@ -574,7 +462,7 @@ def add_meta_group(db_path, entry_id, meta_group_name):
     """
 
     # open databae
-    s = open_database(db_path)
+    s = connect_database(db_path)
     status = False
 
     entry = s.query(Main).filter(Main.entry_id == entry_id).first()
@@ -610,7 +498,7 @@ def remove_meta_group(db_path, entry_id, meta_group_name):
     """
 
     # open databae
-    s = open_database(db_path)
+    s = connect_database(db_path)
     status = False
 
     entry = s.query(Main).filter(Main.entry_id == entry_id).first()
@@ -648,7 +536,7 @@ def add_meta_data(db_path, entry_id, meta_group_name, **kwargs):
     """
 
     # open databae
-    s = open_database(db_path)
+    s = connect_database(db_path)
     status = False
 
     entry = s.query(Main).filter(Main.entry_id == entry_id).first()
@@ -693,7 +581,7 @@ def alter_meta_data(db_path, entry_id, meta_group_name, **kwargs):
     """
 
     # open databae
-    s = open_database(db_path)
+    s = connect_database(db_path)
     status = False
 
     entry = s.query(Main).filter(Main.entry_id == entry_id).first()
@@ -738,7 +626,7 @@ def remove_meta_data(db_path, entry_id, meta_group_name, **kwargs):
     """
 
     # open databae
-    s = open_database(db_path)
+    s = connect_database(db_path)
     status = False
 
     entry = s.query(Main).filter(Main.entry_id == entry_id).first()
@@ -760,6 +648,7 @@ def remove_meta_data(db_path, entry_id, meta_group_name, **kwargs):
     s.close()
 
     return status
+
 def selectByKeyword(table, name, value):
     '''Get mask for selection of entries by keyword.'''
     return table[name] == value
@@ -880,84 +769,3 @@ def store_dict(entry_id,
     return sim
 
 
-#### deprecated #####
-# functions below are deprecated and will be removed
-# after checking that they are not used any more
-# Micha: please do not remove them. get_entry_keywords / tags could be usefull
-# used in app.py !
-
-def getEntryTable(db_path, columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"], load_keys=True, load_tags=True):
-    '''Get a pandas DataFrame with all entries in a data base and
-    keywords and tags.'''
-    s = open_database(db_path)
-
-    # get DB tables as pandas DataFrames
-    main = pd.read_sql_table("main", s.bind)[["id"] + columns].set_index('id')
-    keywords_raw = pd.read_sql_table("keywords", s.bind)
-
-    if load_keys:
-        keywords = keywords_raw[keywords_raw['value'].notna()]
-        if keywords.size != 0:
-            # inner join to get the connection between entries and keywords
-            #m = pd.merge(main, keywords, right_on="main_id", how="inner")
-            # pivot table reduces it to columns
-            p = keywords.pivot(index='main_id', columns='name')["value"]
-            main = pd.concat([main, p], axis=1)
-
-    if load_tags:
-        tags = keywords_raw[~keywords_raw['value'].notna()]
-        if tags.notna().size != 0:
-            tags = tags.drop('value', axis=1).groupby("main_id").agg({"name": listed}).rename(index=int, columns={"name": "tags"})
-            main = pd.concat([main, tags], axis=1)
-
-    s.close()
-
-    return main
-
-
-def getEntryDetails(db_path, entry_id):
-    s = open_database(db_path)
-
-    sim = s.query(Main).filter(Main.entry_id == entry_id).one()
-    d = sim.__dict__
-    try:
-        del d["_sa_instance_state"]
-    except:
-        pass
-    out = sim.__dict__
-
-    s.close()
-    return out
-
-
-def getEntryKeywords(db_path, entry_id):
-    s = open_database(db_path)
-
-    sim = s.query(Main).filter(Main.entry_id == entry_id).one()
-    keywords = dict((k.name, k.value) for k in sim.keywords
-                    if k.value != 'None' and k is not None)
-
-    s.close()
-    return keywords
-
-def getEntryTags(db_path, entry_id):
-    s = open_database(db_path)
-
-    sim = s.query(Main).filter(Main.entry_id == entry_id).one()
-    tags = [t.name for t in sim.keywords if t.value == "None" or t.value is None]
-
-    s.close()
-    return tags
-
-
-def getEntryMeta(db_path, entry_id):
-    s = open_database(db_path)
-
-    sim = s.query(Main).filter(Main.entry_id == entry_id).one()
-
-    out = {}
-    for meta_group in sim.meta.all():
-        out[meta_group.name] = {meta.name: meta.value for meta in meta_group.entries.all()}
-
-    s.close()
-    return out
