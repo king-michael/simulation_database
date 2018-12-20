@@ -234,9 +234,29 @@ def delete_keywords(session, entry_id, *args):
     -------
 
     """
-    session.query(Keywords).join(Main)\
+    keywords = session.query(Keywords).join(Main)\
         .filter(Main.entry_id == entry_id)\
-        .filter(Keywords.name.in_(args)).delete()
+        .filter(Keywords.name.in_(args)).all()
+    for keyword in keywords:
+        session.delete(keyword)
+
+
+def delete_all_keywords(session, entry_id):
+    """
+    Function to delete all keywords for an entry.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    entry_id : str
+        entry id in the database
+    """
+    keywords = session.query(Keywords).join(Main)\
+        .filter(Main.entry_id == entry_id)\
+        .all()
+    for keyword in keywords:
+        session.delete(keyword)
 
 
 # =========================================================================== #
@@ -283,7 +303,7 @@ def add_meta_group(session, entry_id, meta_group_name, unique=True, main_id=None
     return meta_group
 
 
-def remove_meta_group(session, entry_id, meta_group_name):
+def delete_meta_group(session, entry_id, meta_group_name):
     """
     Remove a meta information group/block from entry.
 
@@ -297,10 +317,12 @@ def remove_meta_group(session, entry_id, meta_group_name):
         Name of meta group, e.g. Thermostat, Barostat
     """
 
-    session.query(MetaGroups).join(Main) \
+    meta_groups = session.query(MetaGroups).join(Main) \
         .filter(MetaGroups.name == meta_group_name)\
         .filter(Main.entry_id == entry_id) \
-        .delete()
+        .all()
+    for meta_group in meta_groups:
+        session.delete(meta_group)
 
 
 def add_meta_data(session, entry_id, meta_group_name, unique=True, metagroup_id=None, **kwargs):
@@ -434,10 +456,12 @@ def set_meta_data(session, entry_id, meta_group_name, **kwargs):
         List of added MetaEntries
     """
 
-    session.query(MetaEntry).join(Main).join(MetaGroups) \
+    meta_datas = session.query(MetaEntry).join(Main).join(MetaGroups) \
         .filter(MetaGroups.name == meta_group_name) \
         .filter(Main.entry_id == entry_id) \
-        .delete()
+        .all()
+    for meta_data in meta_datas:
+        session.delete(meta_data)
 
     meta_entries = add_meta_data(session=session, entry_id=entry_id,
                                  meta_group_name=meta_group_name, **kwargs)
@@ -460,10 +484,12 @@ def remove_meta_data(session, entry_id, meta_group_name, **kwargs):
         keyword = "value": Value is given, remove if entry has given value
         keyword = None : Remove meta data entry independent of value
     """
-    session.query(MetaEntry).join(Main).join(MetaGroups) \
+    meta_datas = session.query(MetaEntry).join(Main).join(MetaGroups) \
         .filter(MetaGroups.name == meta_group_name) \
         .filter(Main.entry_id == entry_id) \
-        .delete()
+        .all()
+    for meta_data in meta_datas:
+        session.delete(meta_data)
 
 
 
