@@ -1,0 +1,318 @@
+#########################################################################################################
+# LAMMPS input file template
+#########################################################################################################
+# equil 100 ps (100ps nvt & 100 ps npt [nequil&nsteps]	mit position restraint (fix spring, fix_modify)
+# ff raiteri modified with group crystal and fix spring: fix_modify
+#
+#########################################################################################################
+# Units metal : eV       - ps - angstrom - bar
+#       real  : kcal/mol - fs - angstrom - atm
+#########################################################################################################
+
+units metal
+
+#########################################################################################################
+# Input coordinates and force field
+#########################################################################################################
+
+variable inpfile  string final_data.0      # input filename
+variable fffile   string ff-ae_caco3.lmp # forcefield filename
+variable resfile  string final_restart.0   # restart filename
+
+#########################################################################################################
+# Run type 
+#########################################################################################################
+
+variable minimise equal        0       # Energy minimisation
+variable relax    equal        0       # NVT + NPT relaxation
+variable shrink   equal        0       # Manual shrink of z (number of 0.1 steps)
+variable md       equal        1       # Plain MD
+variable plumed   equal        0       # PLUMED (metadynamcis)
+
+#########################################################################################################
+# Molecular dynamics parameters
+#########################################################################################################
+
+variable ens      equal        2       # ensemble (0=nve, 1=nvt, 2=npt, 3=ber, 4=lang, 5=csvr, 6=vres, 7=csld
+variable ts       equal        0.001  # simulation timestep (time units)
+variable nequil   equal        0       # number of equilibration steps
+variable nsteps   equal	      1e3      # number of MD steps 
+
+variable temp_s   equal      300        # starting temperature 
+variable temp_f   equal      300        # final simulation temperature 
+variable trel     equal        0.1     # thermostat relaxation time
+variable tscale   equal        1       # thermostat relaxation freq - vel rescaling only
+variable deltat   equal       10       # maximum temperature change - vel rescaling only
+
+variable npttype  string     tri       # type of NPT (iso, aniso, tri, z...)
+variable pres     equal        1.01325 # pressure (NPT runs only)
+variable prel     equal        1.0     # barostat relaxation time
+
+#########################################################################################################
+# Output parameters
+#########################################################################################################
+
+variable ntraj    equal     1000       # trajectory output frequency - all system
+variable ntraj_s  equal     -100       # trajectory output frequency - solute only
+variable nthermo  equal     1000       # thermodynamic data output frequency 
+variable dbg_erg  equal        0       # print out the energy in a gulp friendly mode for debugging
+
+#########################################################################################################
+# Energy minimisation parameters
+#########################################################################################################
+
+variable mtraj    equal       -1       # trajectory output frequency - all system
+variable etol     equal     1e-6       # % change in energy
+variable ftol     equal     1e-6       # max force threshold (force units)
+variable maxiter  equal      100       # max # of iterations
+
+#########################################################################################################
+# optional
+#########################################################################################################
+
+variable vBalance	equal 0         # enables balance & fix balance
+
+#########################################################################################################
+# 3D periodic simulation
+#########################################################################################################
+
+boundary p p p
+
+#########################################################################################################
+# Atom style - charge/vdw/bonded
+#########################################################################################################
+
+atom_style full
+
+#########################################################################################################
+# Read the input structure
+#########################################################################################################
+
+box tilt large
+if "${run_no} == 0" then "read_data ${inpfile}" else "read_restart ${resfile}"
+# change_box all triclinic
+
+#########################################################################################################
+# Force field 
+#########################################################################################################
+
+include ${fffile}
+
+#########################################################################################################
+# Parameters for reciprocal space electrostatics
+#########################################################################################################
+
+kspace_style pppm 1.0e-5
+kspace_modify fftbench no
+
+
+if "${vBalance} > 0" then &
+"print 'rebalance simulation grid'" &
+"balance 1.0 shift xyz 20 1.1" 
+
+#########################################################################################################
+# Thermodynamic output
+#########################################################################################################
+
+variable str_basic string 'step time pe temp press'
+
+# MD ensemble (0=nve, 1=nvt, 2=npt, 3=ber, 4=lang, 5=stoc, 6=vres)
+variable str_ens string ' '
+if "${ens} == 0" then "variable str_ens string 'etotal'"
+if "${ens} == 2 && ${npttype} == iso"   then "variable str_ens string 'vol'"
+if "${ens} == 2 && ${npttype} == aniso" then "variable str_ens string 'vol cella cellb cellc'"
+if "${ens} == 2 && ${npttype} == z"     then "variable str_ens string 'vol cellc'"
+if "${ens} == 2 && ${npttype} == tri"   then "variable str_ens string 'vol cella cellb cellc cellalpha cellbeta cellgamma'"
+
+# variables for a gulp friendly output
+variable str_dbg string ' '
+if "${dbg_erg} == 1" then &
+  "variable e2body    equal ebond+evdwl" &
+  "variable ecoul_tot equal ecoul+elong" &
+  "variable str_dbg string 'ebond eangle edihed eimp evdwl ecoul elong etail v_e2body v_ecoul_tot'"
+
+thermo_style custom ${str_basic} ${str_ens} ${str_dbg} cpu
+thermo_modify flush yes
+thermo ${nthermo}
+
+#########################################################################################################
+# Groups' definitions
+#########################################################################################################
+
+if "${run_no} > 0" then "jump SELF end_groups"
+  group free id > -1
+#  group water type ${O2} ${H2}
+#  group solute subtract all water
+label end_groups
+
+#######################################################
+#                groups                               #
+#######################################################
+# group spce type  ${H2}  ${O2}
+group crystal type  ${Ca} ${C4} ${O4}
+# group ca type ${Ca}
+# group c4 type ${C4}
+# group o4 type ${O4}
+# group co3 type ${C4} ${O4}
+#######################################################
+#                Turn on position restraints          #
+#######################################################
+#fix tether crystal spring/self 1000.0
+#fix_modify tether energy yes
+
+#########################################################################################################
+# Eneergy minimisation
+#########################################################################################################
+
+if "${minimise} <= 0 || ${run_no} > 0" then "jump SELF end_minimise"
+  print "Doing CG minimisation"
+#was tun hier mit ff  
+  if "${mtraj} > 0" then &
+    "dump mdcd all dcd ${mtraj} min.dcd" &
+    "dump_modify mdcd unwrap yes"
+  min_style cg
+  min_modify line quadratic
+  minimize ${etol} ${ftol} ${maxiter} ${maxiter}
+  reset_timestep 0
+  if "${mtraj} > 0" then &
+    "undump mdcd"
+label end_minimise
+
+#########################################################################################################
+# Timestep in ps
+#########################################################################################################
+
+timestep ${ts}
+
+#########################################################################################################
+# Restart file
+#########################################################################################################
+
+restart 100000 restart.1 restart.2
+
+#########################################################################################################
+# Trajectory output - whole system and solute only
+#########################################################################################################
+
+if "${ntraj} > 0" then &
+  "dump 1 all dcd ${ntraj} trajectory.${run_no}.dcd" &
+  "dump_modify 1 unwrap yes"                         
+
+if "${ntraj_s} > 0" then &
+  "dump 2 solute dcd ${ntraj_s} solute.${run_no}.dcd" &
+  "dump_modify 2 unwrap yes"
+
+#########################################################################################################
+# Remove the centre of mass motion
+#########################################################################################################
+
+fix com free momentum 1000 linear 1 1 1
+
+#if "${vBalance} > 0" then &
+#"fix fBalance all balance 1000 1.1 shift xyz 10 1.1"
+
+#fix 	shake	all	shake 0.0001	20 	1 	b 1 a 1
+
+
+#########################################################################################################
+# Relax structure NVT + NPT
+#########################################################################################################
+
+if "${relax} <= 0" then "jump SELF end_relax"
+  if "${run_no} > 0" then "jump SELF end_relax"
+  print "Doing NVT-NPT relaxation"
+  velocity free create ${temp_s} ${iseed0} mom yes dist gaussian
+  fix nve free nve
+  fix md free temp/csvr ${temp_s} ${temp_f} ${trel} ${iseed1}
+  run ${nequil}
+  unfix nve
+  unfix md
+  
+  velocity free create ${temp_s} ${iseed2} mom yes dist gaussian
+  fix md free npt temp ${temp_s} ${temp_f} ${trel} ${npttype} ${pres} ${pres} ${prel} tchain 5 pchain 5 mtk yes
+  run ${nsteps}
+  unfix md
+  reset_timestep 0
+  write_restart final_restart.${run_no}
+  write_data final_data.${run_no}
+  quit
+label end_relax
+
+#########################################################################################################
+# Manual shrink of z
+#########################################################################################################
+
+if "${shrink} <= 0" then "jump SELF end_shrink"
+  if "${run_no} > 0" then "jump SELF end_shrink"
+  print "Shrinking z"
+
+  fix nve free nve
+  fix md free temp/csvr ${temp_s} ${temp_f} ${trel} ${iseed1}
+
+  label loop_shrink
+  variable n loop ${shrink}
+    print "N = $n"
+    change_box all z delta 0.0 -0.1 units box
+    dump shrink_trj all dcd ${ntraj} shrink.${n}.dcd
+    run ${nequil}
+    undump shrink_trj
+    next n
+  jump SELF loop_shrink
+write_restart final_restart.${run_no}
+  quit
+label end_shrink
+
+#########################################################################################################
+# Ensembles (0=nve, 1=nvt, 2=npt, 3=ber, 4=lang, 5=stoc, 6=vres)
+#########################################################################################################
+
+if "${md} < 0 && ${plumed} <= 0" then "jump SELF end_ens"
+  print "Setting up the ensembles"
+  if "${run_no} == 0" then "velocity free create ${temp_s} ${iseed0} mom yes dist gaussian"
+  if "${ens} == 0" then "fix nve free nve"
+  if "${ens} == 1" then "fix md  free nvt temp ${temp_s} ${temp_f} ${trel} tchain 5"
+  if "${ens} == 2" then "fix md  free npt temp ${temp_s} ${temp_f} ${trel} ${npttype} ${pres} ${pres} ${prel} tchain 5 pchain 5 mtk yes"
+  if "${ens} == 3" then "fix nve free nve" "fix md free temp/berendsen ${temp_s} ${temp_f} ${trel}"
+  if "${ens} == 4" then "fix nve free nve" "fix md free langevin ${temp_s} ${temp_f} ${trel} ${iseed1} tally yes zero yes"
+  if "${ens} == 5" then "fix nve free nve" "fix md free temp/csvr ${temp_s} ${temp_f} ${trel} ${iseed1}"
+  if "${ens} == 6" then "fix nve free nve" "fix md free temp/rescale ${tscale} ${temp_s} ${temp_f} ${tmin} ${tmax}"
+  if "${ens} == 7" then "fix nve free nve" "fix md free temp/csld ${temp_s} ${temp_f} ${trel} ${iseed1}"
+label end_ens
+
+#compute myTemp free temp
+#fix_modify md temp myTemp
+#thermo_modify temp myTemp
+
+#########################################################################################################
+# Plain Molecular Dynamics
+#########################################################################################################
+
+if "${md} <= 0" then "jump SELF end_md"
+  print 'Doing Molecular dynamics'
+  run ${nsteps}
+  write_restart final_restart.${run_no}
+  write_data final_data.${run_no}
+  quit
+label end_md
+
+#########################################################################################################
+# PLUMED 
+#########################################################################################################
+
+if "${plumed} <= 0" then "jump SELF end_plumed"
+  if "${nequil} <= 0 || ${run_no} > 0" then "jump SELF end_plumed_equi"
+    print "Doing PLUMED equilibration"   
+    fix eqplmd all plumed plumedfile plumed.equi.inp outfile plumed.equi.out
+    run ${nequil}
+    write_restart equil_restart
+    unfix eqplmd
+  label end_plumed_equi
+
+  print "Doing PLUMED production"
+  fix plmd all plumed plumedfile plumed.mtd.inp outfile plumed.mtd.out
+  run ${nsteps}
+  write_restart final_restart.${run_no}
+  write_data final_data.${run_no}
+  quit
+label end_plumed
+

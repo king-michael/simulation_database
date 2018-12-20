@@ -1,0 +1,125 @@
+##############################################################################################
+#### Atoms' types - mass - charge
+##############################################################################################
+#@ 8   atom types
+
+# variable O2  equal 1  # water
+# variable H2  equal 2  #
+variable C4  equal 2  # carbonate
+variable O4  equal 3  #
+# variable Mg  equal 5  # magnesium
+variable Ca  equal 1  # calcium
+# variable Sr  equal 7  # strontium
+# variable Ba  equal 8  # barium
+
+##############################################################################################
+#### Atoms' masses
+##############################################################################################
+
+# mass  ${O2}    16.000
+# mass  ${H2}     1.010
+mass  ${C4}    12.010
+mass  ${O4}    16.000
+# mass  ${Mg}    24.310
+mass  ${Ca}    40.080
+# mass  ${Sr}    87.620
+# mass  ${Ba}   137.330
+
+##############################################################################################
+#### Atoms' charges
+##############################################################################################
+
+# set type ${O2}  charge    -0.820000 
+# set type ${H2}  charge     0.410000 
+set type ${C4}  charge     1.123285 
+set type ${O4}  charge    -1.041095 
+# set type ${Mg}  charge     2.000000 
+set type ${Ca}  charge     2.000000 
+# set type ${Sr}  charge     2.000000 
+# set type ${Ba}  charge     2.000000 
+
+##############################################################################################
+#### Covalent bonds parameters                                                                
+##############################################################################################
+#@  2   bond types
+
+# bond_style  hybrid harmonic morse    
+# #@ O2 - H2
+# bond_coeff   1   harmonic    22.965000      1.0120000                 
+# #@ C4 - O4
+# bond_coeff   2   harmonic    20.424650      1.3042000  
+bond_style  harmonic   
+bond_coeff   1   20.424650      1.3042000                 
+
+##############################################################################################
+#### Covalent angles parameters                                                               
+##############################################################################################
+#@  2   angle types
+
+# angle_style  hybrid class2   harmonic 
+# #@ H2 - O2 - H2  
+# angle_coeff   1   harmonic    1.6456800      113.24000                              
+# #@ O4 - C4 - O4  
+# angle_coeff   2   class2      120.00000      6.6170000      0.0000000      0.0000000
+# angle_coeff   2   class2 bb   12.818000      1.3042000      1.3042000               
+# angle_coeff   2   class2 ba   1.5331900      1.5331900      1.3042000      1.3042000
+
+angle_style  class2 
+angle_coeff   1         120.00000      6.6170000      0.0000000      0.0000000
+angle_coeff   1    bb   12.818000      1.3042000      1.3042000               
+angle_coeff   1    ba   1.5331900      1.5331900      1.3042000      1.3042000
+
+##############################################################################################
+#### Covalent dihedrals parameters                                                            
+##############################################################################################
+#@  0   dihedral types
+
+##############################################################################################
+#### Covalent improper dihedrals parameters                                                   
+##############################################################################################
+#@  1   improper types
+
+improper_style distance 
+#@  C4-O4-O4-O4 
+improper_coeff   1     13.647000      360.00000    
+
+##############################################################################################
+# Pair potentials                                                                             
+##############################################################################################
+
+variable rmin  equal 6.
+variable rmax  equal 9.
+variable rcoul equal 9.
+
+# pair_style hybrid/overlay coul/long ${rcoul} lj/cut ${rmax} lj/mdf ${rmin} ${rmax} buck/mdf ${rmin} ${rmax}
+pair_style hybrid/overlay coul/long ${rcoul} buck/mdf ${rmin} ${rmax}
+pair_coeff       *       *             coul/long
+
+##############################################################################################
+# Interactions with water
+# Water
+# pair_coeff     ${O2}   ${O2}             lj/cut      0.00674        3.165492                   
+pair_modify tail yes
+
+# Alkaline earths
+# pair_coeff     ${O2}   ${Mg}             lj/mdf      0.001137       2.82                       
+# pair_coeff     ${O2}   ${Ca}             lj/mdf      0.00095        3.35                       
+# pair_coeff     ${O2}   ${Sr}             lj/mdf      0.000776       3.65                       
+# pair_coeff     ${O2}   ${Ba}             lj/mdf      0.000657       3.965                      
+
+# Carbonate
+# pair_coeff     ${O2}   ${O4}           buck/mdf  12534.455133       0.202          0.
+# pair_coeff     ${H2}   ${O4}           buck/mdf    340.             0.217          0.
+
+##############################################################################################
+# Carbonate - carbonat
+pair_coeff     ${O4}   ${O4}           buck/mdf  63840.199          0.198913      27.89901     
+
+##############################################################################################
+# Interactions with carbonate -
+# pair_coeff     ${O4}   ${Mg}           buck/mdf   3944.8613         0.238160       0.0
+pair_coeff      ${Ca} ${O4}             buck/mdf   3161.6335         0.271511       0.   
+# pair_coeff     ${O4}   ${Sr}           buck/mdf  14250.269          0.244116       0.   
+# pair_coeff     ${O4}   ${Ba}           buck/mdf  13478.151          0.258299       0.   
+
+special_bonds lj 0.  0.  0.  coul 0.  0.  0.
