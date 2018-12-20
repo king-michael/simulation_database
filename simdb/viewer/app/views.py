@@ -1,12 +1,14 @@
+from __future__ import print_function, nested_scopes, generators, absolute_import, unicode_literals
+
 import sys, os
 sys.path.append("..")
 from flask import render_template, request, redirect, flash, url_for, abort
 #from databaseModel import Main
-from databaseViewer import app
-from app import db
-from app.databaseModelApp import DBPath
+from simdb.viewer.databaseViewer import app
+from simdb.viewer.app import db
+from simdb.viewer.app.databaseModelApp import DBPath
 from sqlalchemy.orm.exc import NoResultFound
-from databaseAPI import *
+import simdb.databaseAPI as api
 import pandas as pd
 import json
 
@@ -78,7 +80,8 @@ def filter_table():
     # load table if a valid DB is selected
     if db_path != "" and os.path.exists(db_path):
         db_id = db.session.query(DBPath).filter(DBPath.path == db_path).one().id  # need this only while working with paths
-        table = get_entry_table(db_path, group_names=group, tags=tag, columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"])
+        session = api.connect_database(db_path=db_path)
+        table = api.get_entry_table(session, group_names=group, keyword_names=tag, columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"])
     else:
         db_id = 0
         table = pd.DataFrame([], columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"])
@@ -127,7 +130,7 @@ def filter_table():
     table["created_on"] = table["created_on"].apply(lambda x: x.strftime('%Y/%m/%d') if x is not None else "--")
 
     table = table[columns]
-    results = table.to_html(classes="table sortable", escape=False) # convert to HTML
+    results = table.to_html(classes=str("table sortable"), escape=False) # convert to HTML
 
     return results
 
@@ -137,9 +140,9 @@ def build_filter():
 
     # interaction with buildFilter() js function
     db_path = request.args['db_path']
-
-    out = {'groups' : get_groups(db_path),
-           'tags'   : get_tags(db_path)}
+    session = api.connect_database(db_path=db_path)
+    out = {'groups' : api.get_all_groups(session=session),
+           'tags'   : api.get_all_keywords(session=session).keys()}
 
     return json.dumps(out)
 
@@ -153,10 +156,10 @@ def detail(db_id, entry_id):
     # render template
     return render_template(
         'details.html',
-        sim = getEntryDetails(path, entry_id),
-        meta = getEntryMeta(path, entry_id),
-        keywords = getEntryKeywords(path, entry_id),
-        tags = getEntryTags(path, entry_id)
+        sim = api.getEntryDetails(path, entry_id),
+        meta = api.getEntryMeta(path, entry_id),
+        keywords = api.getEntryKeywords(path, entry_id),
+        tags = api.getEntryTags(path, entry_id)
     )
 
 

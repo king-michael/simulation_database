@@ -107,6 +107,112 @@ def get_all_groups(session):
     groups = session.query(Groups.name).select_from(Groups).all()
     return groups
 
+
+# =========================================================================== #
+# entry table
+# =========================================================================== #
+
+def get_entry_table(session,
+                    group_names=None,
+                    keyword_names=None,
+                    columns=('entry_id', 'path', 'owner', 'url', 'type', 'description')):
+    """
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    group_names : None or Union[List,Tuple]
+        names of groups, logic for groups is OR
+    keyword_names : None or Union[List,Tuple]
+        logic for tags is AND
+    columns : Union[List,Tuple]
+        columns which should be displayed
+
+    Returns
+    -------
+    df : pandas.core.frame.DataFrame
+        Pandas DataFrame of the entry table
+    """
+
+    # open database
+    query = session.query(Main.id,*[getattr(Main,attr) for attr in columns])
+
+    # filter by groups
+    if isinstance(group_names, Iterable):
+        raise NotImplementedError("database Model does not support this")
+        query = query.join(Groups).filter(Groups.name.in_(group_names)).distinct()
+
+    # filter by tags
+    if isinstance(keyword_names, Iterable):
+        query = query.join(Keywords)\
+                     .filter(and_(Main.keywords.any(name=name) for name in keyword_names))\
+                     .distinct(Main.id)
+
+    # get entries as pandas table
+    df = pd.read_sql(query.statement, session.bind, index_col="id")
+
+    return df
+
+
+def get_entry_details(session, entry_id):
+    """
+    Get all information about an entry in database.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    entry_id : str
+        entry id
+
+    Returns
+    -------
+    sim_dict : dict
+        Simulation object in dictionary form.
+    """
+
+    sim = session.query(Main).filter(Main.entry_id == entry_id).one()
+    if sim is None:
+        return None
+    else:
+        return sim2dict(sim)
+
+
+# =========================================================================== #
+# utility functions
+# =========================================================================== #
+
+def sim2dict(sim):
+    """
+    Function to create a dictionary from a sim object.
+
+    Notes
+    -----
+    sim_dict['children'] :
+        returns a list of all `sim_dict(child)`
+    sim_dict['parents'] :
+        only returns a list of the parent `entry_id`
+
+    Parameters
+    ----------
+    sim : Main
+        Main table object
+
+    Returns
+    -------
+    sim_dict : dict
+        sim as dictionary
+
+    """
+    sim_dict = dict((c.name, getattr(sim, c.name)) for c in sim.__table__.columns)
+    sim_dict['parents'] = sorted([entry.parent.entry_id for entry in sim.parents])
+
+    sim_dict['children'] = sorted([sim2dict(entry.child) for entry in sim.children],
+                                  key=lambda x: x['entry_id'])
+    sim_dict['keywords'] = dict((k.name, k.value) for k in sim.keywords)
+    return sim_dict
+
 # =========================================================================== #
 # get/set/update keywords
 # =========================================================================== #
@@ -493,110 +599,6 @@ def remove_meta_data(session, entry_id, meta_group_name, **kwargs):
 
 
 
-# =========================================================================== #
-# entry table
-# =========================================================================== #
-
-def get_entry_table(session,
-                    group_names=None,
-                    keyword_names=None,
-                    columns=('entry_id', 'path', 'owner', 'url', 'type', 'description')):
-    """
-
-    Parameters
-    ----------
-    session : sqlalchemy.orm.session.Session
-        SQL Alchemy session
-    group_names : None or Union[List,Tuple]
-        names of groups, logic for groups is OR
-    keyword_names : None or Union[List,Tuple]
-        logic for tags is AND
-    columns : Union[List,Tuple]
-        columns which should be displayed
-
-    Returns
-    -------
-    df : pandas.core.frame.DataFrame
-        Pandas DataFrame of the entry table
-    """
-
-    # open database
-    query = session.query(Main.id,*[getattr(Main,attr) for attr in columns])
-
-    # filter by groups
-    if isinstance(group_names, Iterable):
-        raise NotImplementedError("database Model does not support this")
-        query = query.join(Groups).filter(Groups.name.in_(group_names)).distinct()
-
-    # filter by tags
-    if isinstance(keyword_names, Iterable):
-        query = query.join(Keywords)\
-                     .filter(and_(Main.keywords.any(name=name) for name in keyword_names))\
-                     .distinct(Main.id)
-
-    # get entries as pandas table
-    df = pd.read_sql(query.statement, session.bind, index_col="id")
-
-    return df
-
-
-def get_entry_details(session, entry_id):
-    """
-    Get all information about an entry in database.
-
-    Parameters
-    ----------
-    session : sqlalchemy.orm.session.Session
-        SQL Alchemy session
-    entry_id : str
-        entry id
-
-    Returns
-    -------
-    sim_dict : dict
-        Simulation object in dictionary form.
-    """
-
-    sim = session.query(Main).filter(Main.entry_id == entry_id).one()
-    if sim is None:
-        return None
-    else:
-        return sim2dict(sim)
-
-
-# =========================================================================== #
-# utility functions
-# =========================================================================== #
-
-def sim2dict(sim):
-    """
-    Function to create a dictionary from a sim object.
-
-    Notes
-    -----
-    sim_dict['children'] :
-        returns a list of all `sim_dict(child)`
-    sim_dict['parents'] :
-        only returns a list of the parent `entry_id`
-
-    Parameters
-    ----------
-    sim : Main
-        Main table object
-
-    Returns
-    -------
-    sim_dict : dict
-        sim as dictionary
-
-    """
-    sim_dict = dict((c.name, getattr(sim, c.name)) for c in sim.__table__.columns)
-    sim_dict['parents'] = sorted([entry.parent.entry_id for entry in sim.parents])
-
-    sim_dict['children'] = sorted([sim2dict(entry.child) for entry in sim.children],
-                                  key=lambda x: x['entry_id'])
-    sim_dict['keywords'] = dict((k.name, k.value) for k in sim.keywords)
-    return sim_dict
 
 # TODO change group based functions after databaseModel changed
 def add_group(db_path, entry_id, group_name):
