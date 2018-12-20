@@ -270,6 +270,53 @@ def remove_keyword(db_path, entry_id, **kwargs):
 
     return status
 
+
+def get_entry_table(db_path, group_names=None, tags=None, columns=None):
+    """Get pandas table of all entries meeting the selection creteria.
+    This is maybe a better way to get entries since selection is on SQL level.
+
+    Args:
+        db_path: string, path to database
+        group_names: list, names of groups, logic for groups is OR
+        tags: list, logic for tags is AND
+        columns: list, columns which should be displayed
+    """
+
+    # open databae
+    s = connect_database(db_path)
+    q = s.query(Main).options(noload(Main.keywords))
+
+    # filter by groups
+    if group_names is not None:
+        groups = []
+        for groupname in group_names:
+            try:
+                # collect groups
+                groups.append(s.query(Groups).filter(Groups.name == groupname).one())
+            except NoResultFound:
+                print("{} is not a group in selected database.".format(groupname))
+
+        groups = [Main.groups.any(id=group.id) for group in groups]
+        q = q.filter(or_(*groups))
+
+    # filter by tags
+    if tags is not None:
+        tags = [and_(Main.keywords.any(name=tag), Main.keywords.any(value=None)) for tag in tags]
+
+        q = q.filter(and_(*tags))
+
+    # get entries as pandas table
+    df = pd.read_sql(q.statement, s.bind, index_col="id")
+
+    s.close()
+
+    # convert output
+    if columns is not None:
+        df = df[columns]
+
+    return df
+
+
 #### deprecated #####
 # functions below are deprecated and will be removed
 # after checking that they are not used any more

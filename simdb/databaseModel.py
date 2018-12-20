@@ -11,7 +11,7 @@ from datetime import datetime
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import not_, and_, distinct
+from sqlalchemy import not_, and_, or_, any_, all_, distinct
 from sqlalchemy import Table
 from sqlalchemy import exists
 # Base class
@@ -53,10 +53,6 @@ class Main(Base):
     created_on = Column(DateTime(), nullable=True)
     added_on = Column(DateTime(), default=datetime.now)
     updated_on = Column(DateTime(), default=datetime.now, onupdate=datetime.now)
-
-    #n_atoms = Column(Integer(), nullable=True)
-    #n_steps = Column(Integer(), nullable=True)
-    #time_step = Column(Numeric(), nullable=True)
 
     children = relationship('AssociationMainMain',
                             back_populates="parent",
@@ -110,6 +106,7 @@ class Main(Base):
                           # cascade="all, delete-orphan",  # apply delete also for groups
                           # passive_deletes=True,  # apply delete also for childs
                           )
+
 
 
 

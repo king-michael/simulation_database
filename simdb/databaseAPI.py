@@ -25,7 +25,8 @@ import numpy as np
 import itertools
 import os
 
-from typing import Union, List
+from typing import Union, List, Tuple
+from collections import Iterable
 from simdb.databaseModel import *
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import noload
@@ -234,6 +235,52 @@ def delete_keywords(session, entry_id, *args):
 
 
 # =========================================================================== #
+# entry table
+# =========================================================================== #
+
+def get_entry_table(session,
+                    group_names=None,
+                    keyword_names=None,
+                    columns=('entry_id', 'path', 'owner', 'url', 'type', 'description')):
+    """
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    group_names : None or Union[List,Tuple]
+        names of groups, logic for groups is OR
+    keyword_names : None or Union[List,Tuple]
+        logic for tags is AND
+    columns : Union[List,Tuple]
+        columns which should be displayed
+
+    Returns
+    -------
+    df : pandas.core.frame.DataFrame
+        Pandas DataFrame of the entry table
+    """
+
+    # open database
+    query = session.query(Main.id,*[getattr(Main,attr) for attr in columns])
+
+    # filter by groups
+    if isinstance(group_names, Iterable):
+        raise NotImplementedError("database Model does not support this")
+        query = query.join(Groups).filter(Groups.name.in_(group_names)).distinct()
+
+    # filter by tags
+    if isinstance(keyword_names, Iterable):
+        query = query.join(Keywords)\
+                     .filter(and_(Main.keywords.any(name=name) for name in keyword_names))\
+                     .distinct(Main.id)
+
+    # get entries as pandas table
+    df = pd.read_sql(query.statement, session.bind, index_col="id")
+
+    return df
+
+# =========================================================================== #
 # utility functions
 # =========================================================================== #
 
@@ -268,51 +315,6 @@ def sim2dict(sim):
     return sim_dict
 
 
-
-def get_entry_table(db_path, group_names=None, tags=None, columns=None):
-    """Get pandas table of all entries meeting the selection creteria.
-    This is maybe a better way to get entries since selection is on SQL level.
-
-    Args:
-        db_path: string, path to database
-        group_names: list, names of groups, logic for groups is OR
-        tags: list, logic for tags is AND
-        columns: list, columns which should be displayed
-    """
-
-    # open databae
-    s = connect_database(db_path)
-    q = s.query(Main).options(noload(Main.keywords))
-
-    # filter by groups
-    if group_names is not None:
-        groups = []
-        for groupname in group_names:
-            try:
-                # collect groups
-                groups.append(s.query(Groups).filter(Groups.name == groupname).one())
-            except NoResultFound:
-                print("{} is not a group in selected database.".format(groupname))
-
-        groups = [Main.groups.any(id=group.id) for group in groups]
-        q = q.filter(or_(*groups))
-
-    # filter by tags
-    if tags is not None:
-        tags = [and_(Main.keywords.any(name=tag), Main.keywords.any(value=None)) for tag in tags]
-
-        q = q.filter(and_(*tags))
-
-    # get entries as pandas table
-    df = pd.read_sql(q.statement, s.bind, index_col="id")
-
-    s.close()
-
-    # convert output
-    if columns is not None:
-        df = df[columns]
-
-    return df
 
 
 def get_entry_details(db_path, entry_id):
