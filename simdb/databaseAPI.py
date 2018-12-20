@@ -25,7 +25,7 @@ import numpy as np
 import itertools
 import os
 
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, Optional, Any
 from collections import Iterable
 from simdb.databaseModel import *
 from sqlalchemy.orm.exc import NoResultFound
@@ -34,6 +34,7 @@ from sqlalchemy import or_, and_
 
 
 Session = sessionmaker()
+
 
 def connect_database(db_path):
     """
@@ -110,6 +111,7 @@ def get_all_groups(session):
 # get/set/update keywords
 # =========================================================================== #
 
+
 def get_keywords(session, entry_id):
     """
     Function to get the keywords for a entry_id
@@ -119,7 +121,7 @@ def get_keywords(session, entry_id):
     session : sqlalchemy.orm.session.Session
         SQL Alchemy session
     entry_id : str
-        entry id
+        entry id in the database
 
     Returns
     -------
@@ -131,7 +133,7 @@ def get_keywords(session, entry_id):
     return keywords
 
 
-def add_single_keyword(session, entry_id, name, value=None, unqiue=True, main_id=None):
+def add_single_keyword(session, entry_id, name, value=None, unique=True, main_id=None):
     """
     Function to add a single keyword
 
@@ -140,23 +142,24 @@ def add_single_keyword(session, entry_id, name, value=None, unqiue=True, main_id
     session : sqlalchemy.orm.session.Session
         SQL Alchemy session
     entry_id : str
-        entry id
+        entry id in the database
     name : str
         Name of the keyword.
     value : Union[float,int,str,bool,None]
         Value of the keyword. (Default is None.)
-    unqiue : bool
+    unique : bool
         Keyword will be assumed to be unqiue. (Default is `True`.)
     main_id : int or None
         ID in the `main` table. (Default is `None`.)
     """
+
     # get keyword if unique else None
     keyword = session.query(Keywords).join(Main)\
-                .filter(Keywords.name == name)\
-                .filter(Main.entry_id == entry_id)\
-                .one_or_none() if unqiue else None
+        .filter(Keywords.name == name)\
+        .filter(Main.entry_id == entry_id)\
+        .one_or_none() if unique else None
 
-    # create keyword if not there else update
+    # create keyword if not there or not unique else update
     if keyword is None:
         if main_id is None:
             main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
@@ -164,6 +167,7 @@ def add_single_keyword(session, entry_id, name, value=None, unqiue=True, main_id
     else:
         keyword.value = value
     session.add(keyword)
+
 
 def update_keywords(session, entry_id, **kwargs):
     """
@@ -174,24 +178,26 @@ def update_keywords(session, entry_id, **kwargs):
     session : sqlalchemy.orm.session.Session
         SQL Alchemy session
     entry_id : str
-        entry id
+        entry id in the database
     kwargs : dict
         keyword name and value
     """
 
     keywords = session.query(Keywords).join(Main)\
-                .filter(Main.entry_id == entry_id)\
-                .filter(Keywords.name.in_(kwargs.keys())).all()
+        .filter(Main.entry_id == entry_id)\
+        .filter(Keywords.name.in_(kwargs.keys())).all()
     for keyword in keywords:
         keyword.value = kwargs.pop(keyword.name)
+
     if len(keywords) != 0:
         main_id = keywords[0].main_id
     else:
         main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
-        keywords = []
+
     for name, value in kwargs.items():
         keywords.append(Keywords(name=name, value=value, main_id=main_id))
     session.add_all(keywords)
+
 
 def set_keywords(session, entry_id, **kwargs):
     """
@@ -202,7 +208,7 @@ def set_keywords(session, entry_id, **kwargs):
     session : sqlalchemy.orm.session.Session
         SQL Alchemy session
     entry_id : str
-        entry id
+        entry id in the database
     kwargs : dict
         keyword name and value
     """
@@ -210,6 +216,7 @@ def set_keywords(session, entry_id, **kwargs):
     session.query(Keywords).filter(Keywords.main_id == main_id).delete()
     for name, value in kwargs.items():
         session.add(Keywords(name=name, value=value, main_id=main_id))
+
 
 def delete_keywords(session, entry_id, *args):
     """
@@ -220,18 +227,244 @@ def delete_keywords(session, entry_id, *args):
     session : sqlalchemy.orm.session.Session
         SQL Alchemy session
     entry_id : str
-        entry id
+        entry id in the database
     args : List[str]
 
     Returns
     -------
 
     """
-    keywords = session.query(Keywords).join(Main)\
-                .filter(Main.entry_id == entry_id)\
-                .filter(Keywords.name.in_(args)).all()
-    for keyword in keywords:
-        session.delete(keyword)
+    session.query(Keywords).join(Main)\
+        .filter(Main.entry_id == entry_id)\
+        .filter(Keywords.name.in_(args)).delete()
+
+
+# =========================================================================== #
+# get/set/update keywords
+# =========================================================================== #
+
+
+def add_meta_group(session, entry_id, meta_group_name, unique=True, main_id=None):
+    """
+    Add a meta information group/block to entry.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    entry_id : str
+        entry id in the database
+    meta_group_name : str
+        Name of meta group, e.g. Thermostat, Barostat
+    unique : bool
+        Keyword will be assumed to be unqiue. (Default is `True`.)
+    main_id : int or None
+        ID in the `main` table. (Default is `None`.)
+
+    Returns
+    -------
+    meta_group : MetaGroups
+        added MetaGroups object
+    """
+
+    # get meta_group if unique else None
+    meta_group = session.query(MetaGroups).join(Main)\
+        .filter(MetaGroups.name == meta_group_name)\
+        .filter(Main.entry_id == entry_id)\
+        .one_or_none() if unique else None
+
+    # create meta_group if not there or is not unique
+    if meta_group is None:
+        if main_id is None:
+            main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
+        meta_group = MetaGroups(name=meta_group_name, main_id=main_id)
+        session.add(meta_group)
+
+    return meta_group
+
+
+def remove_meta_group(session, entry_id, meta_group_name):
+    """
+    Remove a meta information group/block from entry.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    entry_id : str
+        entry id in the database
+    meta_group_name: str
+        Name of meta group, e.g. Thermostat, Barostat
+    """
+
+    session.query(MetaGroups).join(Main) \
+        .filter(MetaGroups.name == meta_group_name)\
+        .filter(Main.entry_id == entry_id) \
+        .delete()
+
+
+def add_meta_data(session, entry_id, meta_group_name, unique=True, metagroup_id=None, **kwargs):
+    """
+    Add meta data to entry.
+
+    Create MetaGroup if not there.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    entry_id : str
+        entry id in the database
+    unique : bool
+        Keyword will be assumed to be unqiue. (Default is `True`.)
+    main_id : int or None
+        ID in the `main` table. (Default is `None`.)
+    meta_group_name: str
+        Name of meta group, e.g. Thermostat, Barostat
+    **kwargs : kwargs
+        keyword1="value1", keyword2="value2"
+
+    Returns
+    -------
+    meta_entries : List[MetaEntry]
+        List of added MetaEntries
+    """
+    meta_entries = session.query(MetaEntry).join(Main).join(MetaGroups) \
+        .filter(MetaGroups.name == meta_group_name)\
+        .filter(Main.entry_id == entry_id)\
+        .filter(MetaEntry.name.in_(kwargs.keys()))\
+        .all()
+
+    if unique:
+        for meta_entry in meta_entries:
+            kwargs.pop(meta_entry.name)
+
+    if metagroup_id is None:
+        if len(meta_entries) != 0:
+            metagroup_id = meta_entries[0].metagroup_id
+        else:
+            metagroup_id = session.query(MetaGroups.id).join(Main)\
+                .filter(MetaGroups.name == meta_group_name) \
+                .filter(Main.entry_id == entry_id).first()
+            if len(metagroup_id) > 0:
+                metagroup_id = metagroup_id[0]
+            else:
+                main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
+                meta_group = MetaGroups(name=meta_group_name, main_id=main_id)
+                session.add(meta_group)
+                metagroup_id = meta_group.id
+
+    for name, value in kwargs.items():
+        meta_entries.append(MetaEntry(name=name, value=value, metagroup_id=metagroup_id))
+    session.add_all(meta_entries)
+
+    return meta_entries
+
+
+def update_meta_data(session, entry_id, meta_group_name, **kwargs):
+    """
+    Update meta data in entry.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    entry_id : str
+        entry id in the database
+    meta_group_name: str
+        Name of meta group, e.g. Thermostat, Barostat
+    **kwargs : kwargs
+        update keyword to value
+        keyword = "value"
+
+    Returns
+    -------
+    meta_entries : List[MetaEntry]
+        List of added MetaEntries
+    """
+
+    meta_entries = session.query(MetaEntry).join(Main).join(MetaGroups) \
+        .filter(MetaGroups.name == meta_group_name) \
+        .filter(Main.entry_id == entry_id) \
+        .filter(MetaEntry.name.in_(kwargs.keys())) \
+        .all()
+
+    for meta_entry in meta_entries:
+        meta_entry.value =  kwargs.pop(meta_entry.name)
+
+    if len(meta_entries) != 0:
+        metagroup_id = meta_entries[0].metagroup_id
+    else:
+        metagroup_id = session.query(MetaGroups.id).join(Main) \
+            .filter(MetaGroups.name == meta_group_name) \
+            .filter(Main.entry_id == entry_id).first()
+        if len(metagroup_id) > 0:
+            metagroup_id = metagroup_id[0]
+        else:
+            main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
+            meta_group = MetaGroups(name=meta_group_name, main_id=main_id)
+            session.add(meta_group)
+            metagroup_id = meta_group.id
+
+    for name, value in kwargs.items():
+        meta_entries.append(MetaEntry(name=name, value=value, metagroup_id=metagroup_id))
+    session.add_all(meta_entries)
+
+    return meta_entries
+
+def set_meta_data(session, entry_id, meta_group_name, **kwargs):
+    """
+    set meta data in entry.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    entry_id : str
+        entry id in the database
+    meta_group_name: str
+        Name of meta group, e.g. Thermostat, Barostat
+    **kwargs : kwargs
+        set keyword to value
+        keyword = "value"
+
+    Returns
+    -------
+    meta_entries : List[MetaEntry]
+        List of added MetaEntries
+    """
+
+    session.query(MetaEntry).join(Main).join(MetaGroups) \
+        .filter(MetaGroups.name == meta_group_name) \
+        .filter(Main.entry_id == entry_id) \
+        .delete()
+
+    meta_entries = add_meta_data(session=session, entry_id=entry_id,
+                                 meta_group_name=meta_group_name, **kwargs)
+
+    return meta_entries
+
+def remove_meta_data(session, entry_id, meta_group_name, **kwargs):
+    """
+    Remove meta data in entry.
+
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+    entry_id : str
+        Entry ID in database
+    meta_group_name: str
+        Name of meta group, e.g. Thermostat, Barostat
+    **kwargs : kwargs
+        keyword = "value": Value is given, remove if entry has given value
+        keyword = None : Remove meta data entry independent of value
+    """
+    session.query(MetaEntry).join(Main).join(MetaGroups) \
+        .filter(MetaGroups.name == meta_group_name) \
+        .filter(Main.entry_id == entry_id) \
+        .delete()
+
 
 
 # =========================================================================== #
@@ -280,6 +513,31 @@ def get_entry_table(session,
 
     return df
 
+
+def get_entry_details(session, entry_id):
+    """
+    Get all information about an entry in database.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    entry_id : str
+        entry id
+
+    Returns
+    -------
+    sim_dict : dict
+        Simulation object in dictionary form.
+    """
+
+    sim = session.query(Main).filter(Main.entry_id == entry_id).one()
+    if sim is None:
+        return None
+    else:
+        return sim2dict(sim)
+
+
 # =========================================================================== #
 # utility functions
 # =========================================================================== #
@@ -314,62 +572,7 @@ def sim2dict(sim):
     sim_dict['keywords'] = dict((k.name, k.value) for k in sim.keywords)
     return sim_dict
 
-
-
-
-def get_entry_details(db_path, entry_id):
-    """Get all information about an entry in database.
-
-    Args:
-        db_path: path to database file
-        entry_id: string
-
-    Return:
-        out: dictionary
-
-    """
-
-    s = connect_database(db_path)
-
-    # find entry
-    try:
-        sim = s.query(Main).filter(Main.entry_id == entry_id).one()
-    except NoResultFound:
-        print("No entry found with entry_id {} in {}.".format(entry_id, db_path))
-        return {}
-
-    # details from main table
-    out = sim.__dict__
-
-    # groups
-    out["groups"] = [g.name for g in sim.groups]
-
-    # tags
-    out["tags"] = [t.name for t in sim.keywords if t.value == None]
-
-    # keywords
-    out["keywords"] = {k.name: k.value for k in sim.keywords if k.value != None}
-
-    # meta data
-    meta = {}
-    for meta_group in sim.meta.all():
-        meta[meta_group.name] = {m.name: m.value for m in meta_group.entries}
-    out["meta"] = meta
-
-    s.close()
-
-    # clean up output
-    try:
-        del out["_sa_instance_state"]
-    except:
-        pass
-
-    return out
-
-
-
-
-
+# TODO change group based functions after databaseModel changed
 def add_group(db_path, entry_id, group_name):
     """Add simulation to group.
 
@@ -446,210 +649,6 @@ def remove_group(db_path, entry_id, group_name):
     return status
 
 
-def add_meta_group(db_path, entry_id, meta_group_name):
-    """Add a meta information group/block to entry.
-
-    Parameters
-    ----------
-    db_path : str
-        Path to the database
-    entry_id : str
-        Entry ID in database
-    meta_group_name: str
-        Name of meta group, e.g. Thermostat, Barostat
-
-    Returns
-    -------
-    True if meta group was added to entry, otherwise False.
-    """
-
-    # open databae
-    s = connect_database(db_path)
-    status = False
-
-    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
-    meta_group = entry.meta.filter_by(name=meta_group_name).first()
-
-    if entry and not meta_group:
-        meta_group = MetaGroups(name=meta_group_name)
-        entry.meta.append(meta_group)
-
-        s.commit()
-        status = True
-
-    s.close()
-
-    return status
-
-
-def remove_meta_group(db_path, entry_id, meta_group_name):
-    """Remove a meta information group/block from entry.
-
-    Parameters
-    ----------
-    db_path : str
-        Path to the database
-    entry_id : str
-        Entry ID in database
-    meta_group_name: str
-        Name of meta group, e.g. Thermostat, Barostat
-
-    Returns
-    -------
-    True if meta group was removed from group, otherwise False.
-    """
-
-    # open databae
-    s = connect_database(db_path)
-    status = False
-
-    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
-    meta_group = entry.meta.filter_by(name=meta_group_name).first()
-
-    if entry and meta_group:
-        entry.meta.remove(meta_group)
-
-        s.commit()
-        status = True
-
-    s.close()
-
-    return status
-
-
-def add_meta_data(db_path, entry_id, meta_group_name, **kwargs):
-    """
-    Add meta data to entry.
-
-    Parameters
-    ----------
-    db_path : str
-        Path to the database
-    entry_id : str
-        Entry ID in database
-    meta_group_name: str
-        Name of meta group, e.g. Thermostat, Barostat
-    **kwargs : kwargs
-        keyword1="value1", keyword2="value2"
-
-    Returns
-    -------
-    True
-    """
-
-    # open databae
-    s = connect_database(db_path)
-    status = False
-
-    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
-    meta_group = entry.meta.filter_by(name=meta_group_name).first()
-
-    if entry and meta_group:
-        status = []
-        for name, value in kwargs.items():
-            meta_entry = meta_group.entries.filter_by(name=name).first()
-
-            if not meta_entry:
-                meta_group.entries.append(MetaEntry(name=name, value=value))
-                s.commit()
-                status.append(True)
-
-        status = np.any(status)
-
-    s.close()
-
-    return status
-
-
-def alter_meta_data(db_path, entry_id, meta_group_name, **kwargs):
-    """
-    Alter meta data in entry.
-
-    Parameters
-    ----------
-    db_path : str
-        Path to the database
-    entry_id : str
-        Entry ID in database
-    meta_group_name: str
-        Name of meta group, e.g. Thermostat, Barostat
-    **kwargs : kwargs
-        Alter keyword to value
-        keyword = "value"
-
-    Returns
-    -------
-    True
-    """
-
-    # open databae
-    s = connect_database(db_path)
-    status = False
-
-    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
-    meta_group = entry.meta.filter_by(name=meta_group_name).first()
-
-    if entry and meta_group:
-        status = []
-        for name, value in kwargs.items():
-            meta_entry = meta_group.entries.filter_by(name=name).first()
-
-            if meta_entry:
-                meta_entry.value = value
-                s.commit()
-                status.append(True)
-
-        status = np.any(status)
-
-    s.close()
-
-    return status
-
-
-def remove_meta_data(db_path, entry_id, meta_group_name, **kwargs):
-    """
-    Remove meta data in entry.
-
-    Parameters
-    ----------
-    db_path : str
-        Path to the database
-    entry_id : str
-        Entry ID in database
-    meta_group_name: str
-        Name of meta group, e.g. Thermostat, Barostat
-    **kwargs : kwargs
-        keyword = "value": Value is given, remove if entry has given value
-        keyword = None : Remove meta data entry independent of value
-
-    Returns
-    -------
-    True
-    """
-
-    # open databae
-    s = connect_database(db_path)
-    status = False
-
-    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
-    meta_group = entry.meta.filter_by(name=meta_group_name).first()
-
-    if entry and meta_group:
-        status = []
-        for name, value in kwargs.items():
-            meta_entry = meta_group.entries.filter_by(name=name).first()
-
-            if meta_entry:
-                if value is None or meta_entry.value == value:
-                    meta_group.entries.remove(meta_entry)
-                    s.commit()
-                    status.append(True)
-
-        status = np.any(status)
-
-    s.close()
-
-    return status
 
 def selectByKeyword(table, name, value):
     '''Get mask for selection of entries by keyword.'''

@@ -46,6 +46,37 @@ def sim2dict(sim):
     sim_dict['children'] = sorted([sim2dict(entry.child) for entry in sim.children],
                                   key=lambda x: x['entry_id'])
     sim_dict['keywords'] = dict((k.name, k.value) for k in sim.keywords)
+
+    sim_dict['meta'] = dict((meta_group.name, dict((m.name, m.value) for m in meta_group.entries))
+                            for meta_group in sim.meta.all())
+
+
     return sim_dict
 
 pprint(sim2dict(sim))
+
+# meta data
+
+def get_entry_details(session, entry_id):
+    """
+    Get all information about an entry in database.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    entry_id : str
+        entry id
+
+    Returns
+    -------
+    sim_dict : dict
+        Simulation object in dictionary form.
+    """
+
+    sim = session.query(Main).filter(Main.entry_id == entry_id).one()
+    if sim is None:
+        return None
+    else:
+        return sim2dict(sim)
+pprint(get_entry_details(session, 'MK0302'))

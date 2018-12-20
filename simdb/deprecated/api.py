@@ -317,6 +317,191 @@ def get_entry_table(db_path, group_names=None, tags=None, columns=None):
     return df
 
 
+def get_entry_details(db_path, entry_id):
+    """Get all information about an entry in database.
+
+    Args:
+        db_path: path to database file
+        entry_id: string
+
+    Return:
+        out: dictionary
+
+    """
+
+    s = connect_database(db_path)
+
+    # find entry
+    try:
+        sim = s.query(Main).filter(Main.entry_id == entry_id).one()
+    except NoResultFound:
+        print("No entry found with entry_id {} in {}.".format(entry_id, db_path))
+        return {}
+
+    # details from main table
+    out = sim.__dict__
+
+    # groups
+    out["groups"] = [g.name for g in sim.groups]
+
+    # tags
+    out["tags"] = [t.name for t in sim.keywords if t.value == None]
+
+    # keywords
+    out["keywords"] = {k.name: k.value for k in sim.keywords if k.value != None}
+
+    # meta data
+    meta = {}
+    for meta_group in sim.meta.all():
+        meta[meta_group.name] = {m.name: m.value for m in meta_group.entries}
+    out["meta"] = meta
+
+    s.close()
+
+    # clean up output
+    try:
+        del out["_sa_instance_state"]
+    except:
+        pass
+
+    return out
+
+
+
+def add_meta_data(db_path, entry_id, meta_group_name, **kwargs):
+    """
+    Add meta data to entry.
+
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+    entry_id : str
+        Entry ID in database
+    meta_group_name: str
+        Name of meta group, e.g. Thermostat, Barostat
+    **kwargs : kwargs
+        keyword1="value1", keyword2="value2"
+
+    Returns
+    -------
+    True
+    """
+
+    # open databae
+    s = connect_database(db_path)
+    status = False
+
+    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
+    meta_group = entry.meta.filter_by(name=meta_group_name).first()
+
+    if entry and meta_group:
+        status = []
+        for name, value in kwargs.items():
+            meta_entry = meta_group.entries.filter_by(name=name).first()
+
+            if not meta_entry:
+                meta_group.entries.append(MetaEntry(name=name, value=value))
+                s.commit()
+                status.append(True)
+
+        status = np.any(status)
+
+    s.close()
+
+    return status
+
+
+def alter_meta_data(db_path, entry_id, meta_group_name, **kwargs):
+    """
+    Alter meta data in entry.
+
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+    entry_id : str
+        Entry ID in database
+    meta_group_name: str
+        Name of meta group, e.g. Thermostat, Barostat
+    **kwargs : kwargs
+        Alter keyword to value
+        keyword = "value"
+
+    Returns
+    -------
+    True
+    """
+
+    # open databae
+    s = connect_database(db_path)
+    status = False
+
+    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
+    meta_group = entry.meta.filter_by(name=meta_group_name).first()
+
+    if entry and meta_group:
+        status = []
+        for name, value in kwargs.items():
+            meta_entry = meta_group.entries.filter_by(name=name).first()
+
+            if meta_entry:
+                meta_entry.value = value
+                s.commit()
+                status.append(True)
+
+        status = np.any(status)
+
+    s.close()
+
+    return status
+
+
+def remove_meta_data(db_path, entry_id, meta_group_name, **kwargs):
+    """
+    Remove meta data in entry.
+
+    Parameters
+    ----------
+    db_path : str
+        Path to the database
+    entry_id : str
+        Entry ID in database
+    meta_group_name: str
+        Name of meta group, e.g. Thermostat, Barostat
+    **kwargs : kwargs
+        keyword = "value": Value is given, remove if entry has given value
+        keyword = None : Remove meta data entry independent of value
+
+    Returns
+    -------
+    True
+    """
+
+    # open databae
+    s = connect_database(db_path)
+    status = False
+
+    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
+    meta_group = entry.meta.filter_by(name=meta_group_name).first()
+
+    if entry and meta_group:
+        status = []
+        for name, value in kwargs.items():
+            meta_entry = meta_group.entries.filter_by(name=name).first()
+
+            if meta_entry:
+                if value is None or meta_entry.value == value:
+                    meta_group.entries.remove(meta_entry)
+                    s.commit()
+                    status.append(True)
+
+        status = np.any(status)
+
+    s.close()
+
+    return status
+
 #### deprecated #####
 # functions below are deprecated and will be removed
 # after checking that they are not used any more
