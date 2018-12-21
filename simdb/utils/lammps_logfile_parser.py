@@ -24,21 +24,30 @@ class LogFileReader:
         self.WARNINGS = []
         # some defaults
         self.runs = []
-        # parse logfile
-        self.parse_file(self.filename)
+        if isinstance(self.filename, str):
+            # parse logfile
+            self.parse_file(self.filename)
+        elif hasattr(self.filename,'__iter__') and hasattr(self.filename, 'read'):
+            # parse logfile
+            self.parse_file(self.filename, fileobj=self.filename)
 
-    def parse_file(self, filename):
+    def parse_file(self, filename, fileobj=None):
         """
         Parse a lammps logfile
         """
-        with open(filename) as fp:
-            for line in fp:
-                line_strip = line.strip()
-                if len(line_strip) == 0: continue  # empty line
-                if line_strip[0] == "#": continue  # comment line
-                line_split = line_strip.split()
-                if line_strip.find("$") == -1:
-                    self.interprete_line(line_strip)
+        if fileobj is None:
+            fp = open(filename)
+        else:
+            fp = fileobj
+        for line in fp:
+            line_strip = line.strip()
+            if len(line_strip) == 0: continue  # empty line
+            if line_strip[0] == "#": continue  # comment line
+            line_split = line_strip.split()
+            if line_strip.find("$") == -1:
+                self.interprete_line(line_strip)
+        if fileobj is None:
+            fp.close()
         self.compile_infos()
 
     def interprete_line(self, line):
