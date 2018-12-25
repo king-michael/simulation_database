@@ -16,7 +16,7 @@ class LogFileReader:
         """
         self.filename = filename
         self._run = dict(
-            nsteps = 0,             # number of simulation steps
+            n_steps = 0,             # number of simulation steps
             active_fixes = {},      # dictionary of active fixes
         )
 
@@ -57,7 +57,11 @@ class LogFileReader:
         line_split = line.split()
         keyword = line_split[0]
         # Handle fixes
-        if keyword in ['fix', 'unfix']:
+        if keyword == 'units':
+            self._run['units'] = line_split[1]
+        elif keyword == 'timestep':
+            self._run['time_step'] = float(line_split[1])
+        elif keyword in ['fix', 'unfix']:
             self.handle_fix(line_split)
         elif keyword == 'minimize':
             self.handle_minimize(line_split)
@@ -65,10 +69,6 @@ class LogFileReader:
             self.handle_run(line_split)
         elif keyword == 'WARNING:':
             self.WARNINGS.append(line)
-        elif keyword == 'units':
-            self._run['units'] = line_split[1]
-        elif keyword == 'timestep':
-            self._run['timestep'] = float(line_split[1])
 
     def handle_fix(self, line_split):
         """
@@ -97,10 +97,10 @@ class LogFileReader:
         for key in self._run.keys():
             if not key.startswith("_"):
                 run[key] = self._run[key]
-        run['nsteps'] = int(line_split[1])
-        if self._run['nsteps'] is None:
-            self._run['nsteps'] = 0
-        self._run['nsteps'] += int(line_split[1])
+        run['n_steps'] = int(line_split[1])
+        if self._run['n_steps'] is None:
+            self._run['n_steps'] = 0
+        self._run['n_steps'] += int(line_split[1])
         self.runs.append(run)
 
     def handle_minimize(self, line_split):
@@ -108,10 +108,13 @@ class LogFileReader:
         Add a minimization
         """
 
-        run = run = dict(
+        run = dict(
             active_fixes={},
         )
+        if 'units' in self._run:
+            run['units'] = self._run['units']
         run['integrator'] = 'minimize'
+        run['ensemble'] = 'EM'
         run['minimize_prop'] = dict(
             etol=float(line_split[1]),
             ftol=float(line_split[2]),
@@ -206,6 +209,16 @@ class LogFileReader:
         if len(barostat.keys()) != 0:
             self._run['barostat']   = barostat
 
+        if 'thermostat' in self._run and len(self._run['thermostat']) > 0\
+                and 'barostat' in self._run and len(self._run['barostat']) > 0:
+            self._run['ensemble'] = 'npt'
+        elif 'thermostat' in self._run and len(self._run['thermostat']) > 0:
+            self._run['ensemble'] = 'nvt'
+        elif 'barostat' in self._run and len(self._run['barostat']) > 0:
+            self._run['ensemble'] = 'nph'
+        else:
+            self._run['ensemble'] = 'nve'
+
 
 def map_lammps_to_database(keywords):
     # type: (dict) -> dict
@@ -238,23 +251,25 @@ def map_lammps_to_database(keywords):
             conv_time = 0.001
             conv_press = 1.01325
     else:
-        keywords['units'] == 'lj'
+        keywords['units'] = 'lj'
         conv_time = 0.005
         conv_press = 1
 
     rv['units'] = keywords['units']
 
     # handling timestep
-    if 'timestep' in keywords.keys():
+    if 'time_step' in keywords.keys():
         # get the conversion factor for time
-        dt = float(keywords['timestep'])*conv_time
+        dt = float(keywords['time_step'])*conv_time
         rv['time_step'] = dt
     else:
         dt = conv_time
 
     # mapping general stuff
-    if 'nsteps' in keywords.keys():
-        rv['n_steps'] = int(keywords['nsteps'])
+    if 'n_steps' in keywords.keys():
+        rv['n_steps'] = int(keywords['n_steps'])
+    if 'ensemble' in keywords.keys():
+        rv['ensemble'] = keywords['ensemble']
 
     master_dict.update(rv)
     # mapping barostats
@@ -334,3 +349,134 @@ def map_lammps_to_database(keywords):
     master_dict['thermostat'] = rv
 
     return master_dict
+
+
+def check_combinable_runs(run1, run2):
+    """
+    Checks if two runs are combinable.
+
+    pops items that are additive, then checks the rest
+
+    Parameters
+    ----------
+    run1 : LogFileReader.run
+    run2 : LogFileReader.run
+
+    Returns
+    -------
+    bool
+        True if combinable, False if not.
+    """
+    if 'n_steps' in run1 and 'n_steps' in run2:
+        run1 = dict((k,v) for k,v in run1.items() if k != 'n_steps')
+        run2 = dict((k, v) for k, v in run2.items() if k != 'n_steps')
+    elif 'n_steps' in run1 and not 'n_steps' in run2\
+        or  'n_steps' in run2 and not 'n_steps' in run1:
+        return False
+    return run1 == run2
+
+
+def combine_runs(runs):
+    """
+    Function to combine a list of runs.
+
+    Parameters
+    ----------
+    runs : List[LogFileReader.run]
+        List of runs.
+
+    Returns
+    -------
+    List[LogFileReader.run]
+        List of combined runs if they could be combined.
+    """
+    n_runs = len(runs)
+    if n_runs < 2:
+        return runs
+    s = 1
+    previous_run, current_run = runs[0], runs[s]
+
+    rv = []
+    for i in range(n_runs):
+        if check_combinable_runs(previous_run, current_run):
+            previous_run['n_steps']+= current_run['n_steps']
+            s+=1
+            if s == n_runs:
+                rv.append(previous_run)
+                break
+            previous_run, current_run = previous_run, runs[s]
+        else:
+            rv.append(previous_run)
+            s+=1
+            if s == n_runs:
+                rv.append(current_run)
+                break
+            previous_run, current_run = current_run, runs[s]
+
+    return rv
+
+
+def combine_metagroups(list_meta_groups):
+    """
+    Function to combine multiple metagroups be renaming them.
+    So they can be added into the database with different names.
+
+    A `suffix` is appended going ``1 .. n_metagroups`` with a padding zero if needed.
+
+    Parameters
+    ----------
+    list_meta_groups : List[dict]
+
+    Returns
+    -------
+    combined_meta_groups : dict
+        Renamed list of metagroups
+    """
+    combined_meta_groups = dict()
+
+    n_runs = len(list_meta_groups)
+    if n_runs > 1:
+        suffix_pattern = '{{:0{:d}d}}'.format(len(str(n_runs)))
+        for i in range(n_runs):
+            meta_groups = list_meta_groups[i]
+            # add suffix_pattern at the end of the runs
+            combined_meta_groups.update(dict((k+suffix_pattern.format(i+1),v) for k,v in meta_groups.items()))
+    else:
+        combined_meta_groups.update(list_meta_groups[0])
+    return combined_meta_groups
+
+def convert_run_to_metagroups(run):
+    """
+    Function to convert runs to metagroups like dictionaries.
+
+    Parameters
+    ----------
+    run : LogFileReader.run
+        Run dictionary.
+
+    Returns
+    -------
+    meta_groups : dict
+        Dictionary of metagroups.
+    """
+    meta_groups = dict(
+        simulation=dict(engine='LAMMPS'),
+        thermostat=dict(),
+        barostat=dict(),
+    )
+
+    simulation_keywords = ['n_steps', 'time_step', 'units']
+    print(run.keys())
+    for keyword in simulation_keywords:
+        if keyword in run:
+            meta_groups['simulation'][keyword] = run[keyword]
+    if 'thermostat' in run:
+        meta_groups['thermostat'].update(run['thermostat'])
+
+    if 'barostat' in run:
+        meta_groups['barostat'].update(run['barostat'])
+
+    for key in list(meta_groups.keys()):
+        if len(meta_groups[key]) == 0:
+            meta_groups.pop(key)
+    return meta_groups
