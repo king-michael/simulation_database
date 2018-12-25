@@ -457,9 +457,10 @@ def add_meta_data(session, entry_id, meta_group_name, unique=True, metagroup_id=
     meta_entries : List[MetaEntry]
         List of added MetaEntries
     """
-    meta_entries = session.query(MetaEntry).join(Main).join(MetaGroups) \
+    meta_entries = session.query(MetaEntry).join(MetaGroups) \
         .filter(MetaGroups.name == meta_group_name)\
-        .filter(Main.entry_id == entry_id)\
+        .filter(MetaEntry.metagroup_id == MetaGroups.id)\
+        .filter(MetaGroups.main_id == entry_id)\
         .filter(MetaEntry.name.in_(kwargs.keys()))\
         .all()
 
@@ -474,14 +475,14 @@ def add_meta_data(session, entry_id, meta_group_name, unique=True, metagroup_id=
             metagroup_id = session.query(MetaGroups.id).join(Main)\
                 .filter(MetaGroups.name == meta_group_name) \
                 .filter(Main.entry_id == entry_id).first()
-            if len(metagroup_id) > 0:
+            if metagroup_id is not None and len(metagroup_id) > 0:
                 metagroup_id = metagroup_id[0]
             else:
                 main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
                 meta_group = MetaGroups(name=meta_group_name, main_id=main_id)
                 session.add(meta_group)
+                session.flush()
                 metagroup_id = meta_group.id
-
     for name, value in kwargs.items():
         meta_entries.append(MetaEntry(name=name, value=value, metagroup_id=metagroup_id))
     session.add_all(meta_entries)
