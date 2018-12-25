@@ -466,7 +466,6 @@ def convert_run_to_metagroups(run):
     )
 
     simulation_keywords = ['n_steps', 'time_step', 'units']
-    print(run.keys())
     for keyword in simulation_keywords:
         if keyword in run:
             meta_groups['simulation'][keyword] = run[keyword]
