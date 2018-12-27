@@ -23,13 +23,15 @@ db_output = 'micha.db'
 
 clean_up = False        # delete files afterwards
 
-create_database = True # create the database
+create_database = True  # create the database
 add_keywords = True     # add_keywords to the database
+add_metadata = True     # add_metadata to the database
 
 # =========================================================================== #
 # Script
 # =========================================================================== #
 list_databases = []
+
 # =================================== #
 # Create the database
 # =================================== #
@@ -40,6 +42,7 @@ if create_database:
 else:
     db_raw = 'micha_raw.db'
 list_databases.append(db_raw)
+
 # =================================== #
 # Add keywords
 # =================================== #
@@ -50,6 +53,18 @@ if add_keywords:
 else:
     db_raw = 'micha_added_keywords.db'
 list_databases.append(db_raw)
+
+
+# =================================== #
+# Add metadata
+# =================================== #
+if add_metadata:
+    from add_metadata import __main__
+    db_raw = __main__.db_final
+else:
+    db_raw = 'micha_added_metadata.db'
+list_databases.append(db_raw)
+
 
 db_final = db_raw
 

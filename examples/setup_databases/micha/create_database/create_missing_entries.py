@@ -13,7 +13,7 @@ sys.path.append("../../..")
 sys.path.append("../../../..")
 
 from simdb.databaseModel import *
-
+import simdb.databaseAPI as api
 from shutil import copy2
 
 
@@ -30,7 +30,8 @@ logger.info('set OWNER = %s', OWNER)
 logger.info('copy %s --> %s', db_raw, db)
 copy2(db_raw,db)
 
-session = establish_session('sqlite:///{}'.format(db))
+# connect to database
+session = api.connect_database(db_path=db)
 
 rv = session.query(Main.entry_id).all()
 

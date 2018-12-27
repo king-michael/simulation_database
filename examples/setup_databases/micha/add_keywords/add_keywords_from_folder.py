@@ -8,7 +8,7 @@ sys.path.append("../../..")
 sys.path.append("../../../..")
 
 from simdb.databaseModel import *
-from simdb.databaseAPI import *
+import simdb.databaseAPI as api
 from map_folder_structure import generate_keywords
 
 
@@ -31,17 +31,21 @@ logger.info('use database : {}'.format(db_raw))
 logger.info('store in database : {}'.format(db))
 logger.info('root = %s' % root)
 
-table = getEntryTable(db_raw, load_keys=True, load_tags=True) # load whole table
+
+
+logger.info('copy %s --> %s', db_raw, db)
+copy2(db_raw,db)
+
+# connect to database
+session = api.connect_database(db_path=db)
+
+table = api.get_entry_table(session=session) # load whole table
+
 # get the path
 pair_id_path = [(entry_id, path[len(root):])
                 for i, (entry_id, path) in table[['entry_id', 'path']].iterrows() if path != ""]
 
-logger.info('add_keywords_from_path: copy %s --> %s', db_raw, db)
-copy2(db_raw,db)
-
-session = establish_session('sqlite:///{}'.format(db))
-
-logger.info('add_keywords_from_path: iterate over all paths and assign keywords')
+logger.info('iterate over all paths and assign keywords')
 for i, (entry_id, path) in enumerate(pair_id_path):
     list_keywords = generate_keywords(path)
     # get simulation
@@ -53,4 +57,4 @@ for i, (entry_id, path) in enumerate(pair_id_path):
 
 session.commit()
 session.close()
-logger.info('add_keywords_from_path: Created the database: %s', db)
+logger.info('Created the database: %s', db)
