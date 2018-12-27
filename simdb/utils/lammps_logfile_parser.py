@@ -1,3 +1,7 @@
+"""
+Scripts to parse and convert LAMMPS log files.
+"""
+
 class LogFileReader:
     def __init__(self, filename):
         """
@@ -445,6 +449,7 @@ def combine_metagroups(list_meta_groups):
         combined_meta_groups.update(list_meta_groups[0])
     return combined_meta_groups
 
+
 def convert_run_to_metagroups(run):
     """
     Function to convert runs to metagroups like dictionaries.
@@ -479,3 +484,54 @@ def convert_run_to_metagroups(run):
         if len(meta_groups[key]) == 0:
             meta_groups.pop(key)
     return meta_groups
+
+
+def logfile_to_metagroups(logfiles,
+                          combine=True,
+                          sort=False,
+                          sort_key=None,
+                          ):
+    """
+    Function to convert a LAMMPS logfile to metagroups
+    Parameters
+    ----------
+    logfiles : str or List[str]
+        List of paths to logfiles or single path.
+    combine : bool
+        Switch if to combine consecutive runs if they are additive. (Default is ``True``.)
+    sort : bool
+        Switch if the logfiles should be sorted. (Default is ``True``.)
+    sort_key : function
+        Function used to sort the logfiles. Default is sort logfiles of the pattern `log.*.lammps`
+
+    Returns
+    -------
+
+    """
+
+    if not isinstance(logfiles, str):
+        if sort:
+            logfiles.sort(key=sort_key)
+
+        # get the different runs from the logfiles
+        list_runs = [map_lammps_to_database(run)
+                     for logfile in logfiles
+                     for run in LogFileReader(logfile).runs]
+    else:
+        # get the different runs from the logfiles
+        list_runs = [map_lammps_to_database(run)
+                     for run in LogFileReader(logfiles).runs]
+
+    # combine additive runs
+    if combine:
+        list_runs = combine_runs(list_runs)
+
+
+    # transform it to metagroups
+    list_metagroups = [convert_run_to_metagroups(run)
+                       for run in list_runs]
+
+    # rename if needed
+    dict_metagroups = combine_metagroups(list_metagroups)
+
+    return dict_metagroups

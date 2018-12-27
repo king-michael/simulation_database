@@ -99,22 +99,12 @@ for sim_id in SIM_IDS:
     logfiles.sort(key=lambda x: int(
         os.path.basename(x).replace('log.', '').replace('.lammps', '')
     ))
-    # get the different runs from the logfiles
-    list_runs = [llfp.map_lammps_to_database(run)
-                 for logfile in logfiles
-                 for run in llfp.LogFileReader(logfile).runs]
 
-    # combine additive runs
-    list_runs = llfp.combine_runs(list_runs)
+    dict_metagroups = llfp.logfile_to_metagroups(logfiles,
+                                                 combine=True,
+                                                 sort=False)
 
-    # transform it to metagroups
-    list_metagroups = [llfp.convert_run_to_metagroups(run)
-                       for run in list_runs]
-
-    # rename if needed
-    list_metagroups = llfp.combine_metagroups(list_metagroups)
-
-    for meta_group_name, meta_group_data in list_metagroups.items():
+    for meta_group_name, meta_group_data in dict_metagroups.items():
         api.add_meta_data(session=session,
                           entry_id=sim.entry_id,
                           meta_group_name=meta_group_name,
