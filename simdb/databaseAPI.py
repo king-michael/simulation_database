@@ -66,7 +66,7 @@ def connect_database(db_path):
 
 
 @contextmanager
-def session_handler(db_path):
+def session_handler(db_path, create=False):
     """
     Context manager for sessions.
 
@@ -74,16 +74,26 @@ def session_handler(db_path):
     ----------
     db_path : str
         Database path.
+    mode : str
+        'r' for read
+        'w' for write
 
     Yields
-    -------
+    ------
     session : sqlalchemy.orm.session.Session
         SQL Alchemy session
-    """
 
-    engine = create_engine('sqlite:///{}'.format(db_path))
-    Session.configure(bind=engine)
-    session = Session()
+    Raises
+    ------
+    IOError
+        If file does not exist and create is ``False``.
+    """
+    if os.path.exists(db_path) or create:
+        engine = create_engine('sqlite:///{}'.format(db_path))
+        Session.configure(bind=engine)
+        session = Session()
+    else:
+        raise IOError("No such file or directory: '{}'".format(db_path))
     try:
         yield session
     except:
