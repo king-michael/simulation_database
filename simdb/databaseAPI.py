@@ -754,6 +754,7 @@ def store_dict(entry_id,
     """
 
     input_kwargs = locals()
+    input_kwargs['type'] = input_kwargs.pop('sim_type')
     _main_kwargs = [i for i in vars(Main).keys() if not i.startswith("_")]
     
     main_kwargs = dict( (k,v) for k,v in input_kwargs.iteritems() if k in _main_kwargs and v is not None)

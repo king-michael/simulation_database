@@ -57,11 +57,12 @@ for fname in find_files(**kwargs_fileFinder):
 
 for data in DATAS:
     sim = Main(
-       entry_id = data['ID'],
-       url = data['MEDIAWIKI'],
-       owner = user,
-       path = data['path'],
-       description = data['INFO'] if 'INFO' in data.keys() else ""
+        entry_id = data['ID'],
+        url = data['MEDIAWIKI'],
+        owner = user,
+        type='LAMMPS',
+        path = data['path'],
+        description = data['INFO'] if 'INFO' in data.keys() else ""
     )
     session.add(sim)
 # session.commit()
