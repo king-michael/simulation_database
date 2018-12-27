@@ -37,9 +37,9 @@ from sqlalchemy import or_, and_
 Session = sessionmaker()
 
 
-def connect_database(db_path):
+def create_new_database(db_path):
     """
-    Open data base and return session.
+    Creates a new database.
 
     Parameters
     ----------
@@ -53,12 +53,41 @@ def connect_database(db_path):
 
     Raises
     ------
-    OSError
+    IOError
+        If ``db_path`` not found.
+    """
+    if os.path.exists(db_path):
+        raise IOError("%s does exist." % db_path)
+    engine = create_engine('sqlite:///{}'.format(db_path))
+    Session.configure(bind=engine)
+    session = Session()
+    Base.metadata.create_all(engine)
+
+    return session
+
+
+def connect_database(db_path):
+    """
+    Open database and return session.
+
+    Parameters
+    ----------
+    db_path : str
+        Path to database.
+
+    Returns
+    -------
+    session : sessionmaker
+        SQL session
+
+    Raises
+    ------
+    IOError
         If ``db_path`` not found.
     """
 
     if not os.path.exists(db_path):
-        raise OSError("%s does not exist." % db_path)
+        raise IOError("%s does not exist." % db_path)
     engine = create_engine('sqlite:///{}'.format(db_path))
     Session.configure(bind=engine)
     session = Session()
