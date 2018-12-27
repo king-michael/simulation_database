@@ -27,6 +27,7 @@ import os
 
 from typing import Union, List, Tuple, Optional, Any
 from collections import Iterable
+from contextlib import contextmanager
 from simdb.databaseModel import *
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import noload
@@ -63,6 +64,34 @@ def connect_database(db_path):
     session = Session()
     return session
 
+
+@contextmanager
+def session_handler(db_path):
+    """
+    Context manager for sessions.
+
+    Parameters
+    ----------
+    db_path : str
+        Database path.
+
+    Yields
+    -------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    """
+
+    engine = create_engine('sqlite:///{}'.format(db_path))
+    Session.configure(bind=engine)
+    session = Session()
+    try:
+        yield session
+    except:
+        session.rollback()
+        raise
+    finally:
+        Session.configure(bind=None)
+        session.close()
 
 # =========================================================================== #
 # get_all_functions
