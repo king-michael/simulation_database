@@ -19,6 +19,7 @@ setup(
     ],
     description='Python application based on SQL, Flask and PyQt to manage meta information about MD simulations.',
     install_requires=[
+        'typing', # for type checking
         'SQLAlchemy',
         'flask',
         'Flask-SQLAlchemy',
