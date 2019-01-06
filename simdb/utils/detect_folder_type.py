@@ -150,7 +150,7 @@ def _compare_with_dict_cases(fname, dict_cases, ignore_warning=False):
     return best_case, best_rating
 
 
-def guess_folder_type_from_files(files, dict_cases):
+def guess_folder_type_from_files(files, dict_cases, ignore_warning=True):
     """
     Function to guess the folder type from a list of file names.
     Parameters
@@ -159,6 +159,8 @@ def guess_folder_type_from_files(files, dict_cases):
         List of file names.
     dict_cases  : dict[dict[unicode]]
         Dictionary of regex patterns for the different cases and a rating of those.
+    ignore_warning : bool
+        Switch if UserWarning should be ignored. Default is ``False``.
 
     Returns
     -------
@@ -166,7 +168,7 @@ def guess_folder_type_from_files(files, dict_cases):
         Guessed folder type.
     """
 
-    file_ratings = sorted([_compare_with_dict_cases(fname, dict_cases=dict_cases, ignore_warning=True)
+    file_ratings = sorted([_compare_with_dict_cases(fname, dict_cases=dict_cases, ignore_warning=ignore_warning)
                            for fname in files],
                           key=lambda x: x[1],
                           reverse=True)
@@ -174,7 +176,7 @@ def guess_folder_type_from_files(files, dict_cases):
     return folder_type
 
 
-def guess_folder_type(path, cases=('LAMMPS', 'GROMACS'), dir_ignore=(), config_file=None):
+def guess_folder_type(path, cases=('LAMMPS', 'GROMACS'), dir_ignore=(), config_file=None, ignore_warning=True):
     """
     Guess the folder_type
     Parameters
@@ -188,6 +190,8 @@ def guess_folder_type(path, cases=('LAMMPS', 'GROMACS'), dir_ignore=(), config_f
     config_file : str or None
         Config files to use. If ``None`` the 'regex_weights.ini' in the module will be used.
         Default is ``None``.
+    ignore_warning : bool
+        Switch if UserWarning should be ignored. Default is ``False``.
 
     Returns
     -------
@@ -196,7 +200,7 @@ def guess_folder_type(path, cases=('LAMMPS', 'GROMACS'), dir_ignore=(), config_f
     """
     if config_file is None:
         config_file = os.path.join(os.path.dirname(__file__), 'regex_weights.ini')
-    dict_cases = _get_dict_cases(config_file=config_file, cases=cases)
+    dict_cases = _get_dict_cases(config_file=config_file, cases=cases, ignore_warning=ignore_warning)
     files = get_files(path, exclude=dir_ignore)
     folder_type = guess_folder_type_from_files(files, dict_cases)
 
