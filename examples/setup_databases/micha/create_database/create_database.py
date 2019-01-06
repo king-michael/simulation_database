@@ -15,6 +15,7 @@ sys.path.append("../../../..")
 
 from simdb.databaseModel import *
 from simdb.utils.fileFinder import find_files
+from simdb.utils.detect_folder_type import guess_folder_type
 
 
 kwargs_fileFinder = dict(
@@ -92,6 +93,7 @@ for data in DATAS:
     sim = Main(
        entry_id = data['ID'],
        url = data['MEDIAWIKI'],
+       type=guess_folder_type(data['path'], cases=['LAMMPS', 'GROMACS'], dir_ignore=['analysis']),
        owner = OWNER,
        path = data['path'],
        description = data['INFO'] if 'INFO' in data.keys() else ""
