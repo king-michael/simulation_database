@@ -28,7 +28,7 @@ class LogFileReader:
         self.WARNINGS = []
         # some defaults
         self.runs = []
-        if isinstance(self.filename, str):
+        if isinstance(self.filename, (str, unicode)):
             # parse logfile
             self.parse_file(self.filename)
         elif hasattr(self.filename,'__iter__') and hasattr(self.filename, 'read'):
@@ -39,6 +39,7 @@ class LogFileReader:
         """
         Parse a lammps logfile
         """
+
         if fileobj is None:
             fp = open(filename)
         else:
@@ -244,8 +245,6 @@ def map_lammps_to_database(keywords):
     master_dict = dict()
     rv = dict()
 
-
-
     # handling units
     if 'units' in keywords.keys():
         if keywords['units'] == 'metal':
@@ -301,9 +300,15 @@ def map_lammps_to_database(keywords):
         for name_lammps,(name_db, fun) in mapping.iteritems():
             if name_lammps in barostat.keys():
                 value = barostat[name_lammps]
-                # if we have to do conversion
-                if fun is not None:
+
+                if fun is None:
+                    fun = str
+
+                if isinstance(value, (tuple, list)):
+                    value = ",".join([fun(v) for v in value])
+                else:
                     value = fun(value)
+
                 # add the value to the dict
                 rv[name_db] = value
                 # remove the entry
@@ -439,7 +444,9 @@ def combine_metagroups(list_meta_groups):
     combined_meta_groups = dict()
 
     n_runs = len(list_meta_groups)
-    if n_runs > 1:
+    if n_runs == 0:
+        return combined_meta_groups
+    elif n_runs > 1:
         suffix_pattern = '{{:0{:d}d}}'.format(len(str(n_runs)))
         for i in range(n_runs):
             meta_groups = list_meta_groups[i]
@@ -506,12 +513,17 @@ def logfile_to_metagroups(logfiles,
 
     Returns
     -------
-
+    dict_metagroups : dict
+        Dictionary of metagroups
     """
 
     if not isinstance(logfiles, str):
         if sort:
-            logfiles.sort(key=sort_key)
+            try:
+                logfiles.sort(key=sort_key)
+            except:
+                print("sort_key fails, fall back to normal sorting")
+                logfiles.sort()
 
         # get the different runs from the logfiles
         list_runs = [map_lammps_to_database(run)
@@ -525,7 +537,6 @@ def logfile_to_metagroups(logfiles,
     # combine additive runs
     if combine:
         list_runs = combine_runs(list_runs)
-
 
     # transform it to metagroups
     list_metagroups = [convert_run_to_metagroups(run)
