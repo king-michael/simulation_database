@@ -1,5 +1,5 @@
 """
-Script to detect the folder structure.
+Module to detect the folder type.
 """
 
 import os
@@ -200,8 +200,8 @@ def guess_folder_type(path, cases=('LAMMPS', 'GROMACS'), dir_ignore=(), config_f
     """
     if config_file is None:
         config_file = os.path.join(os.path.dirname(__file__), 'regex_weights.ini')
-    dict_cases = _get_dict_cases(config_file=config_file, cases=cases, ignore_warning=ignore_warning)
+    dict_cases = _get_dict_cases(config_file=config_file, cases=cases)
     files = get_files(path, exclude=dir_ignore)
-    folder_type = guess_folder_type_from_files(files, dict_cases)
+    folder_type = guess_folder_type_from_files(files, dict_cases=dict_cases, ignore_warning=ignore_warning)
 
     return folder_type
