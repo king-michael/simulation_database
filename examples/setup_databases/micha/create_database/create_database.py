@@ -21,7 +21,7 @@ from simdb.utils.detect_folder_type import guess_folder_type
 kwargs_fileFinder = dict(
     pattern='_info_',
     path='/home/micha/SIM-PhD-King',
-    dir_ignore=['OLD', 'old', 'Old', 'TMP', 'tmp', 'rm', 'template', 'testcase', 'input_files'])
+    dir_ignore=['OLD', 'old', 'Old', 'TMP', 'tmp', 'rm', 'template', 'testcase', 'input_files', 'gits'])
 
 if 'OWNER' in os.environ:
   OWNER = os.environ['OWNER']

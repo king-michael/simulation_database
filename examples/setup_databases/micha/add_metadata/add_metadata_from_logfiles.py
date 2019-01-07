@@ -15,10 +15,10 @@ from simdb.utils import lammps_logfile_parser as llfp
 # =========================================================================== #
 # input
 # =========================================================================== #
-
+logging.basicConfig(level=logging.DEBUG)
 # database name
 db_raw = 'micha_added_keywords.db'
-db = 'tmp_database_add_keywords_from_database.db'
+db = 'tmp_database_add_metadata.db'
 
 # pattern of the logfile
 pattern = 'log.*.lammps'
@@ -44,7 +44,7 @@ copy2(db_raw,db)
 session = api.connect_database(db_path=db)
 
 # get all simulations
-sims = session.query(Main).all()
+sims = session.query(Main).filter(Main.type == 'LAMMPS').all()
 
 logger.info('iterate over the simulations')
 # iterate over all simulations
@@ -60,6 +60,10 @@ for sim in sims:
                       path=sim.path,
                       dir_ignore=dir_ignore)
 
+    # remove symlinks
+    [logfiles.remove(f) for f in list(logfiles) if os.path.islink(f)]
+
+    logger.info('found {} logfiles'.format(len(logfiles)))
     # skip if no logfiles are found
     if len(logfiles) == 0:
         continue
@@ -70,7 +74,7 @@ for sim in sims:
                                                  sort=True,
                                                  sort_key=sort_key)
 
-    #
+    # add metagroups and data to sesion
     for meta_group_name, meta_group_data in dict_metagroups.items():
         api.add_meta_data(session=session,
                           entry_id=sim.entry_id,
