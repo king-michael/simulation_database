@@ -28,12 +28,13 @@ class LogFileReader:
         self.WARNINGS = []
         # some defaults
         self.runs = []
-        if isinstance(self.filename, (str, unicode)):
-            # parse logfile
-            self.parse_file(self.filename)
-        elif hasattr(self.filename,'__iter__') and hasattr(self.filename, 'read'):
+
+        if hasattr(self.filename,'__iter__') and hasattr(self.filename, 'read'):
             # parse logfile
             self.parse_file(self.filename, fileobj=self.filename)
+        else:
+            # parse logfile
+            self.parse_file(self.filename)
 
     def parse_file(self, filename, fileobj=None):
         """
@@ -155,7 +156,7 @@ class LogFileReader:
             'mtk',
         ]
         # go over all fix IDS
-        for fixid, (fix_grp, fix_type, fix_args) in self._run['active_fixes'].iteritems():
+        for fixid, (fix_grp, fix_type, fix_args) in self._run['active_fixes'].items():
             # check if have set an integrator
             if fix_type in ['nve', 'nvt', 'npt', 'nph']:
                 assert integrator is None, "Multiple Integreators are not implemented"
@@ -297,7 +298,7 @@ def map_lammps_to_database(keywords):
             'modulus': ['p_compressibility', lambda x: str(1. / (float(x) * conv_press))]
         }
 
-        for name_lammps,(name_db, fun) in mapping.iteritems():
+        for name_lammps,(name_db, fun) in mapping.items():
             if name_lammps in barostat.keys():
                 value = barostat[name_lammps]
 
@@ -315,7 +316,7 @@ def map_lammps_to_database(keywords):
                 del  barostat[name_lammps]
 
         # add the rest unconverted
-        for key, value in barostat.iteritems():
+        for key, value in barostat.items():
             rv[key] = value
     master_dict['barostat'] = rv
 
@@ -341,7 +342,7 @@ def map_lammps_to_database(keywords):
         }
 
 
-        for name_lammps, (name_db, fun) in mapping.iteritems():
+        for name_lammps, (name_db, fun) in mapping.items():
             if name_lammps in thermostat.keys():
                 value = thermostat[name_lammps]
                 # if we have to do conversion
@@ -353,7 +354,7 @@ def map_lammps_to_database(keywords):
                 del thermostat[name_lammps]
 
         # add the rest unconverted
-        for key, value in thermostat.iteritems():
+        for key, value in thermostat.items():
             rv[key] = value
     master_dict['thermostat'] = rv
 

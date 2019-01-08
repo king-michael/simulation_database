@@ -755,7 +755,7 @@ def selectByKeyword(table, name, value):
 def selectByTag(table, tag):
     '''Get mask for selection of entries by tag.'''
     split = table.tags.str.split(",")
-    mask = [True if np.any(np.array(i[1]) == tag) else False for i in split.iteritems()]
+    mask = [True if np.any(np.array(i[1]) == tag) else False for i in split.items()]
     return pd.Series(mask, index=range(1, len(mask) + 1))
 
 def store_dict(entry_id,
@@ -825,21 +825,21 @@ def store_dict(entry_id,
     input_kwargs['type'] = input_kwargs.pop('sim_type')
     _main_kwargs = [i for i in vars(Main).keys() if not i.startswith("_")]
     
-    main_kwargs = dict( (k,v) for k,v in input_kwargs.iteritems() if k in _main_kwargs and v is not None)
+    main_kwargs = dict( (k,v) for k,v in input_kwargs.items() if k in _main_kwargs and v is not None)
     # update main by mdp parameters
-    for k in raw_mdp_parameters.keys()[:]:
+    for k in list(raw_mdp_parameters.keys())[:]:
         if k in _main_kwargs:
             main_kwargs[k] = raw_mdp_parameters[k]
             del raw_mdp_parameters[k]
     
     # update main by mdp_parameters
-    for k in raw_keywords.keys()[:]:
+    for k in list(raw_keywords.keys())[:]:
         if k in _main_kwargs:
             main_kwargs[k] = raw_keywords[k]
             del raw_keywords[k]
     
     keywords = [] if not 'keywords' in kwargs or kwargs['keywords'] is None else  kwargs['keywords']
-    keywords.extend([Keywords(name=k,value=v) for k,v in raw_keywords.iteritems()])
+    keywords.extend([Keywords(name=k,value=v) for k,v in raw_keywords.items()])
     
     # update keywords
     if len(keywords) != 0:
@@ -848,13 +848,13 @@ def store_dict(entry_id,
 
     metagroups = [] if not 'meta' in kwargs or kwargs['meta'] is None else kwargs['meta']
     
-    for key in raw_mdp_parameters.keys()[:]:
+    for key in list(raw_mdp_parameters.keys())[:]:
         value = raw_mdp_parameters[key]
         if type(value) == dict:
             metagroups.append(
                 MetaGroups(
                     name=key,
-                    entries=[MetaEntry(name=k,value=v) for k,v in value.iteritems()],
+                    entries=[MetaEntry(name=k,value=v) for k,v in value.items()],
                           )
             )
     
