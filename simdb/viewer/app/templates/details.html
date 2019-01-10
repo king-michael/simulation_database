@@ -35,28 +35,28 @@
                 </tr>
             </table>
 
-            {% for meta_group_name in meta %}
+            {% for meta_group_name, meta_group in meta %}
             <h4>{{ meta_group_name.replace("_", " ").capitalize() }}</h4>
             <table id="{{ meta_group_name }}-table" class="table">
-                {% for meta_entry_name in meta[meta_group_name] %}
+                {% for meta_entry_name, meta_entry_value in meta_group %}
                 <tr>
                     <td>{{ meta_entry_name }}</td>
-                    <td>{{ meta[meta_group_name][meta_entry_name] }}</td>
+                    <td>{{ meta_entry_value }}</td>
                 </tr>
                 {% endfor %}
             </table>
             {% endfor %}
 
-            {% if tags|length != 0 %}
-            <h4>Tags</h4>
-            <table id="tags-table" class="table">
-                <tr>
-                {%- for tag in tags %}
-                <td>{{ tag }}</td>
-                {%- endfor %}
-                </tr>
-            </table>
-            {% endif %}
+{#            {% if tags|length != 0 %}#}
+{#            <h4>Tags</h4>#}
+{#            <table id="tags-table" class="table">#}
+{#                <tr>#}
+{#                {%- for tag in tags %}#}
+{#                <td>{{ tag }}</td>#}
+{#                {%- endfor %}#}
+{#                </tr>#}
+{#            </table>#}
+{#            {% endif %}#}
 
             {% if keywords|length != 0 %}
             <h4>Keywords</h4>

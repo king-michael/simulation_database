@@ -152,14 +152,13 @@ def detail(db_id, entry_id):
 
     # get the path to selected DB
     path = db.session.query(DBPath).filter(DBPath.id == db_id).one().path
-
+    session = api.connect_database(db_path=path)
     # render template
     return render_template(
         'details.html',
-        sim = api.getEntryDetails(path, entry_id),
-        meta = api.getEntryMeta(path, entry_id),
-        keywords = api.getEntryKeywords(path, entry_id),
-        tags = api.getEntryTags(path, entry_id)
+        sim = api.get_entry_details(session=session, entry_id=entry_id),
+        meta = api.get_meta_groups(session, entry_id, as_list=True),
+        keywords = api.get_keywords(session=session, entry_id=entry_id),
     )
 
 
