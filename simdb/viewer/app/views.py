@@ -86,7 +86,7 @@ def filter_table():
     else:
         db_id = 0
         table = pd.DataFrame([], columns=used_columns)
-
+    print(type(table))
     # filter by search query
     if search_query != "":
 
@@ -119,14 +119,16 @@ def filter_table():
                 # (?!) in regex tells re to do a search without case sensitivity
                 mask = table['entry_id'].str.contains('(?i)' + statement) | table['description'].str.contains('(?i)' + statement)
             table = table[mask]
-    print(type(table))
+            if len(table) == 0:
+                return table.to_html(classes=str("table sortable"), escape=False) # convert to HTML
+
     # convert table to proper HTML
     pd.set_option('display.max_colwidth', -1) # let pandas print the full entry to HTML table
 
     # Order is important ! dont switch table["path"] and table["entry_id"]
     link_template = '<a href="details/{db_id}/{entry_id}/">{link_name}</a>'
     table["path"] = table.apply(
-        lambda row: link_template.format(entry_id=str(row.entry_id), db_id=db_id, link_name=row.path), axis=1)
+       lambda row: link_template.format(entry_id=str(row.entry_id), db_id=db_id, link_name=row.path), axis=1)
     table["entry_id"] = table["entry_id"].apply(
         lambda entry_id: link_template.format(entry_id=entry_id, db_id=db_id, link_name=entry_id))
     #table["path"] = table["path"].apply(lambda x: '<a href="{0}" target="blank">{0}</a>'.format(x), )
