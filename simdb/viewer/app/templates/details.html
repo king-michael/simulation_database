@@ -64,7 +64,7 @@
             {%- for keyword_name in keywords %}
                 <tr>
                     <td>{{ keyword_name }}</td>
-                    <td>{{ keywords[keyword_name] }}</td>
+                    <td>{% if keywords[keyword_name] != None %}  {{ keywords[keyword_name] }} {% endif %}</td>
                 </tr>
             {%- endfor %}
             </table>
