@@ -77,14 +77,15 @@ def filter_table():
     else:
         tag = [tag]
 
+    used_columns = ["entry_id", "path", "created_on", "added_on", "updated_on", "description"]
     # load table if a valid DB is selected
     if db_path != "" and os.path.exists(db_path):
         db_id = db.session.query(DBPath).filter(DBPath.path == db_path).one().id  # need this only while working with paths
         session = api.connect_database(db_path=db_path)
-        table = api.get_entry_table(session, group_names=group, keyword_names=tag, columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"])
+        table = api.get_entry_table(session, group_names=group, keyword_names=tag, columns=used_columns)
     else:
         db_id = 0
-        table = pd.DataFrame([], columns=["entry_id", "path", "created_on", "added_on", "updated_on", "description"])
+        table = pd.DataFrame([], columns=used_columns)
 
     # filter by search query
     if search_query != "":
@@ -118,12 +119,17 @@ def filter_table():
                 # (?!) in regex tells re to do a search without case sensitivity
                 mask = table['entry_id'].str.contains('(?i)' + statement) | table['description'].str.contains('(?i)' + statement)
             table = table[mask]
-
+    print(type(table))
     # convert table to proper HTML
     pd.set_option('display.max_colwidth', -1) # let pandas print the full entry to HTML table
-    table["entry_id"] = table["entry_id"].apply(lambda x: '<a href="details/{1}/{0}/">{0}</a>'.format(x, db_id)) # convert entry ids to links for details view
-    table["path"] = table["path"].apply(lambda x: '<a href="{0}" target="blank">{0}</a>'.format(x))
 
+    # Order is important ! dont switch table["path"] and table["entry_id"]
+    link_template = '<a href="details/{db_id}/{entry_id}/">{link_name}</a>'
+    table["path"] = table.apply(
+        lambda row: link_template.format(entry_id=str(row.entry_id), db_id=db_id, link_name=row.path), axis=1)
+    table["entry_id"] = table["entry_id"].apply(
+        lambda entry_id: link_template.format(entry_id=entry_id, db_id=db_id, link_name=entry_id))
+    #table["path"] = table["path"].apply(lambda x: '<a href="{0}" target="blank">{0}</a>'.format(x), )
     # convert dates
     table["updated_on"] = table["updated_on"].apply(lambda x: x.strftime('%Y/%m/%d'))
     table["added_on"] = table["added_on"].apply(lambda x: x.strftime('%Y/%m/%d'))

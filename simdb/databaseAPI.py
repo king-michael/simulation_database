@@ -465,7 +465,9 @@ def get_meta_groups(session, entry_id, as_list=False):
     UserWarning :
         If multiple `MetaEntry` in a `MetaGroups` have the same name.
     """
-    metagroups = session.query(MetaGroups).join(Main).filter(Main.entry_id == entry_id).all()
+    metagroups = session.query(MetaGroups).join(Main)\
+        .filter(Main.entry_id == entry_id)\
+        .order_by(MetaGroups.name).all()
     if as_list:
         return [(metagroup.name, metagroup.to_list()) for metagroup in metagroups]
     else:
