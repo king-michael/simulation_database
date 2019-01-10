@@ -25,6 +25,7 @@ import numpy as np
 import itertools
 import os
 
+from warnings import warn
 from typing import Union, List, Tuple, Optional, Any
 from collections import Iterable
 from contextlib import contextmanager
@@ -288,7 +289,7 @@ def sim2dict(sim):
 
 def get_keywords(session, entry_id):
     """
-    Function to get the keywords for a entry_id
+    Function to get the `Keywords` for a `entry_id`.
 
     Parameters
     ----------
@@ -309,7 +310,7 @@ def get_keywords(session, entry_id):
 
 def add_single_keyword(session, entry_id, name, value=None, unique=True, main_id=None):
     """
-    Function to add a single keyword
+    Function to add a single `Keyword`.
 
     Parameters
     ----------
@@ -437,6 +438,79 @@ def delete_all_keywords(session, entry_id):
 # get/set/update keywords
 # =========================================================================== #
 
+def get_meta_groups(session, entry_id, as_list=False):
+    """
+    Function to get the `MetaGroups` for a `entry_id`.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    entry_id : str
+        entry id in the database
+    as_list : bool
+        The result should be returned as list of tuples. This avoids problems with double namings.
+        Default is `False`.
+
+    Returns
+    -------
+    keywords : list or dict
+        MetaGroups for the entry with `entry_id`.
+        The output format is controlled via `as_list`.
+
+    Warns
+    -----
+    UserWarning :
+        If multiple `MetaGroups` have the same name.
+    UserWarning :
+        If multiple `MetaEntry` in a `MetaGroups` have the same name.
+    """
+    metagroups = session.query(MetaGroups).join(Main).filter(Main.entry_id == entry_id).all()
+    if as_list:
+        return [(metagroup.name, metagroup.to_list()) for metagroup in metagroups]
+    else:
+        tmp = [(metagroup.name, metagroup.to_dict()) for metagroup in metagroups]
+        as_dict = dict(tmp)
+        if len(tmp) != len(as_dict):
+            warn("Some MetaGroups is not shown in dict form due to doubled names.")
+        return as_dict
+
+
+def get_single_meta_group(session, entry_id, name, as_list=False):
+    """
+    Function to get the `MetaGroups` for a `entry_id`.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    entry_id : str
+        entry id in the database
+    name : str
+        Name of the MetaGroup.
+    as_list : bool
+        The result should be returned as list of tuples. This avoids problems with double namings.
+        Default is `False`.
+
+    Returns
+    -------
+    keywords : list or dict
+        MetaGroups for the entry with `entry_id`.
+        The output format is controlled via `as_list`.
+
+    Warns
+    -----
+    UserWarning :
+        If multiple `MetaGroups` have the same name.
+    UserWarning :
+        If multiple `MetaEntry` in a `MetaGroups` have the same name.
+    """
+    metagroup = session.query(MetaGroups).join(Main)\
+        .filter(Main.entry_id == entry_id)\
+        .filter(MetaGroups.name == name).one_or_none()
+    if metagroup is None:
+        return None
+    return metagroup.to_list() if as_list else metagroup.to_dict()
 
 def add_meta_group(session, entry_id, meta_group_name, unique=True, main_id=None):
     """

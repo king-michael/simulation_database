@@ -2,6 +2,8 @@
 Database Model
 """
 
+from warnings import warn
+
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, Numeric, String
 from sqlalchemy import DateTime, ForeignKey, Boolean
@@ -204,12 +206,22 @@ class MetaGroups(Base):
                             cascade="all, delete-orphan", # apply delete also for childs
                             passive_deletes=True, # apply delete also for childs
                             )  # lazy='dynamic' -> returns query so we can filter
+    def to_list(self):
+        return [(entry.name, entry.value) for entry in self.entries]
+
+    def to_dict(self):
+        as_list = self.to_list()
+        rv = dict(as_list)
+        if len(as_list) != len(rv):
+            warn("Some MetaEntry is not shown in dict form due to doubled names.")
+        return rv
 
     def __repr__(self):
-        return "{}(main_id='{}', name='{}')".format(
-            self.__class__.__name__,
-            self.main_id,
-            self.name)
+        return "{cls_name}(main_id='{main_id}', name='{name}')".format(
+            cls_name=self.__class__.__name__,
+            main_id=self.main_id,
+            name=self.name,
+           )
 
 class MetaEntry(Base):
     __tablename__ = 'metaentry'
@@ -220,11 +232,11 @@ class MetaEntry(Base):
     value =  Column(String(255), nullable=True)
 
     def __repr__(self):
-        return "{}(metagroup_id='{}', name='{}', value='{}')".format(
-            self.__class__.__name__,
-            self.metagroup_id,
-            self.name,
-            self.value)
+        return "{cls_name}(metagroup_id='{metagroup_id}', name='{name}', value='{value}')".format(
+            cls_name=self.__class__.__name__,
+            metagroup_id=self.metagroup_id,
+            name=self.name,
+            value=self.value)
 
 def setup_database(engine):
     """function to create the database"""
