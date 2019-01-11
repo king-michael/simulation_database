@@ -24,15 +24,19 @@ import pandas as pd
 import numpy as np
 import itertools
 import os
-
+import sys
 from warnings import warn
 from typing import Union, List, Tuple, Optional, Any
 from collections import Iterable
+
 from contextlib import contextmanager
 from simdb.databaseModel import *
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import noload
 from sqlalchemy import or_, and_
+
+# define string types
+string_types = str if sys.version_info[0] == 3 else basestring
 
 
 Session = sessionmaker()
@@ -209,21 +213,14 @@ def get_entry_table(session,
 
     # filter by groups
     if isinstance(group_names, Iterable):
-        #raise NotImplementedError("database Model does not support this")
-        #query = query.join(Groups).filter(Groups.name.in_(group_names)).distinct()
-        query = query.filter(Main.groups.any())
-        # filter by groups
-        groups = []
-        for groupname in group_names:
-            try:
-                # collect groups
-                groups.append(session.query(Groups).filter(Groups.name == groupname).one())
-            except NoResultFound:
-                print("{} is not a group in selected database.".format(groupname))
+        query = query.join(association_main_groups).join(Groups)
+        # handle str or list/tuple
+        if isinstance(group_names, string_types):
+            query = query.filter(Groups.name == group_names)
+        else:
+            query = query.filter(Groups.name.in_(group_names))
 
-        groups = [Main.groups.any(id=group.id) for group in groups]
-        query = query.filter(or_(*groups))
-    # filter by tags
+    # filter by keywords
     if isinstance(keyword_names, Iterable):
         query = query.join(Keywords)\
                      .filter(and_(Main.keywords.any(name=name) for name in keyword_names))\
