@@ -138,7 +138,7 @@ def filter_table():
     table["created_on"] = table["created_on"].apply(lambda x: x.strftime('%Y/%m/%d') if x is not None else "--")
 
     table = table[columns]
-    results = table.to_html(classes=str("table sortable"), escape=False) # convert to HTML
+    results = table.to_html(classes=str("table sortable"), escape=False, index=False) # convert to HTML
 
     return results
 
