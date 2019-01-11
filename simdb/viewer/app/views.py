@@ -120,7 +120,7 @@ def filter_table():
                 mask = table['entry_id'].str.contains('(?i)' + statement) | table['description'].str.contains('(?i)' + statement)
             table = table[mask]
             if len(table) == 0:
-                return table.to_html(classes=str("table sortable"), escape=False) # convert to HTML
+                return table.to_html(classes=str("table sortable"), escape=False, index=False) # convert to HTML
 
     # convert table to proper HTML
     pd.set_option('display.max_colwidth', -1) # let pandas print the full entry to HTML table
