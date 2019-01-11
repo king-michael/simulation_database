@@ -188,7 +188,9 @@ def get_all_groups(session):
 def get_entry_table(session,
                     group_names=None,
                     keyword_names=None,
-                    columns=('entry_id', 'path', 'owner', 'url', 'type', 'description')):
+                    columns=('entry_id', 'path', 'owner', 'url', 'type', 'description'),
+                    order_by='id',
+                    order='assending'):
     """
 
     Parameters
@@ -201,6 +203,10 @@ def get_entry_table(session,
         logic for tags is AND
     columns : Union[List,Tuple]
         columns which should be displayed
+    order_by : None or str
+        Whether results should be sorted or not.
+    order : str
+        `assending` or `desending`
 
     Returns
     -------
@@ -225,6 +231,16 @@ def get_entry_table(session,
         query = query.join(Keywords)\
                      .filter(and_(Main.keywords.any(name=name) for name in keyword_names))\
                      .distinct(Main.id)
+
+    if order_by is not None:
+        if isinstance(order_by, string_types):
+            order_by = getattr(Main, order_by, 'id')
+        if order == 'assending':
+            query = query.order_by(order_by.asc())
+        elif order == 'desending':
+            query = query.order_by(order_by.desc())
+        else:
+            query = query.order_by(order_by)
 
     # get entries as pandas table
     df = pd.read_sql(query.statement, session.bind, index_col="id")
