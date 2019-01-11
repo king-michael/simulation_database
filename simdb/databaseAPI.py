@@ -209,9 +209,20 @@ def get_entry_table(session,
 
     # filter by groups
     if isinstance(group_names, Iterable):
-        raise NotImplementedError("database Model does not support this")
-        query = query.join(Groups).filter(Groups.name.in_(group_names)).distinct()
+        #raise NotImplementedError("database Model does not support this")
+        #query = query.join(Groups).filter(Groups.name.in_(group_names)).distinct()
+        query = query.filter(Main.groups.any())
+        # filter by groups
+        groups = []
+        for groupname in group_names:
+            try:
+                # collect groups
+                groups.append(session.query(Groups).filter(Groups.name == groupname).one())
+            except NoResultFound:
+                print("{} is not a group in selected database.".format(groupname))
 
+        groups = [Main.groups.any(id=group.id) for group in groups]
+        query = query.filter(or_(*groups))
     # filter by tags
     if isinstance(keyword_names, Iterable):
         query = query.join(Keywords)\
