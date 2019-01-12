@@ -56,6 +56,9 @@ class Main(Base):
     added_on = Column(DateTime(), default=datetime.now)
     updated_on = Column(DateTime(), default=datetime.now, onupdate=datetime.now)
 
+    # book keeping
+    priority = Column(Integer(), default=0)
+
     children = relationship('AssociationMainMain',
                             back_populates="parent",
                             foreign_keys='AssociationMainMain.parent_id',
@@ -146,6 +149,7 @@ class Keywords(Base):
     main_id =  Column(Integer(), ForeignKey('main.id') , index=True)
     name  =  Column(String(255), index=True)
     value =  Column(String(255), nullable=True)
+    priority = Column(Integer(), default=0)
 
     def __repr__(self):
         return "{}(main_id='{}', name='{}', value='{}')".format(
@@ -159,6 +163,7 @@ class Groups(Base):
 
     id = Column(Integer(), primary_key=True, index=True)
     name  =  Column(String(255), unique=True)
+    priority = Column(Integer(), default=0)
 
     entries = relationship('Main',
                            secondary=association_main_groups,
@@ -173,26 +178,6 @@ class Groups(Base):
             self.__class__.__name__,
             self.name)
 
-# class AssociationMainGroups(Base):
-#    __tablename__ = 'association_main_groups'
-#
-#    main_id = Column(Integer, ForeignKey('main.id'), primary_key=True)
-#    group_id = Column(Integer, ForeignKey('groups.id'), primary_key=True)
-#
-#    entry = relationship("Main",
-#                         foreign_keys='AssociationMainGroups.main_id',
-#                         back_populates="groups"
-#                         )
-#
-#    group = relationship("Groups",
-#                          foreign_keys='AssociationMainGroups.group_id',
-#                          back_populates="entries"
-#                          )
-#
-#    def __repr__(self):
-#        return """{}(entry='{}', parent='{}')""".format(self.__class__.__name__,
-#                                                                         self.entry.sim_id,
-#                                                                         self.group.name)
 
 class MetaGroups(Base):
     __tablename__ = 'metagroups'
@@ -200,6 +185,8 @@ class MetaGroups(Base):
     id = Column(Integer(), primary_key=True, index=True)
     main_id =  Column(Integer(), ForeignKey('main.id') , index=True)
     name  =  Column(String(255), index=True)
+    priority = Column(Integer(), default=0)
+
     entries = relationship('MetaEntry',
                             backref='main_id' , # check cascade_backrefs
                             lazy='dynamic', # lazy='dynamic' -> returns query so we can filter
@@ -230,6 +217,7 @@ class MetaEntry(Base):
     metagroup_id =  Column(Integer(), ForeignKey('metagroups.id') , index=True)
     name  =  Column(String(255), index=True)
     value =  Column(String(255), nullable=True)
+    priority = Column(Integer(), default=0)
 
     def __repr__(self):
         return "{cls_name}(metagroup_id='{metagroup_id}', name='{name}', value='{value}')".format(
