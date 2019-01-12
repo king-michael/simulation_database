@@ -57,7 +57,10 @@
             var g = $( "#select_group" ).val();
 
             // get selected tag
-            var t = $( "#select_tag" ).val();
+            var k = $( "#select_keyword" ).val();
+
+            // get selected keyword value
+            var v = $( "#select_keyword_value" ).val();
 
             // get search query
             var search_query = document.getElementById("search_field").value;
@@ -88,7 +91,7 @@
             //value = value.trim(); // remove any spaces around the text
                 $.ajax({
                     url: "filter",                 // call the search page
-                    data: {db_path: db_path, search_query: search_query, group: g, tag: t, columns: columns},     // get results from search page by sending value
+                    data: {db_path: db_path, search_query: search_query, group: g, keyword: k, keyword_value: v, columns: columns},     // get results from search page by sending value
                     dataType: "html",
                     success: function(data){
                         $("#results").html(data);  // push resulting table to something with id=results
@@ -101,35 +104,48 @@
         // get everything to build up the filter
         function buildFilter(){
 
-            // get selected table, can I do this in one line?
+            // get selected table, does not work in one line
             var e = document.getElementById("select_table");
             var db_path = e.options[e.selectedIndex].value;
 
-            //value = value.trim(); // remove any spaces around the text
-                $.ajax({
-                    url: "build_filter",                 // call the search page
-                    data: {db_path: db_path},     // get results from search page by sending value
-                    dataType: "json",
-                    success: function(data){
-                        //document.write(data.groups);
-                        // PREPARE selection htm for groups returned by build_filter
-                        var out = "<option value='none'>None ...</option>";
-                        for(i in data.groups){
- 								out += "<option value='" + data.groups[i] + "'>" + data.groups[i] + "</option>";
- 							}
-                        $("#select_group").html(out); // push options to selection tag
+            // get selected keyword
+            var k = document.getElementById("select_keyword");
+            if(k.selectedIndex == -1) {
+                k = "none"
+            } else {
+                k = k.options[k.selectedIndex].value;
+            }
+
+            $.ajax({
+                url: "build_filter",                 // call the search page
+                data: {db_path: db_path, selected_keyword: k},     // get results from search page by sending value
+                dataType: "json",
+                success: function(data){
+                    //document.write(data.groups);
+                    // PREPARE selection htm for groups returned by build_filter
+                    var out = "<option value='none'>None ...</option>";
+                    for(i in data.groups){
+                            out += "<option value='" + data.groups[i] + "'>" + data.groups[i] + "</option>";
+                        }
+                    $("#select_group").html(out); // push options to html
 
 
-                        // tags
-                        var out = "<option value='none'>None ...</option>";
-                        for(i in data.tags){
- 								out += "<option value='" + data.tags[i] + "'>" + data.tags[i] + "</option>";
- 							}
-                        $("#select_tag").html(out); // push options to selection tag
+                    // keywords
+                    var out = "<option value='none'>None ...</option>";
+                    for(i in data.keywords){
+                            out += "<option value='" + data.keywords[i] + "'>" + data.keywords[i] + "</option>";
+                        }
+                    $("#select_keyword").html(out); // push options to html
 
 
-                        // keywords
-                    }
+                    // keyword value
+                    var out = "";
+                    for(i in data.values){
+                            out += "<option value='" + data.values[i] + "'>" + data.values[i] + "</option>";
+                        }
+                    $("#select_keyword_value").html(out); // push options to html
+
+                }
 
                 });
         }

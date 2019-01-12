@@ -61,10 +61,12 @@ def filter_table():
     # interaction with filterTable() js function
     db_path = request.args['db_path'] # get the path to selected data base
     search_query = request.args['search_query'] # get the search query from search field
-    group = request.args['group']
-    tag = request.args['tag']
-    columns = request.args['columns'] # string of selected columns
 
+    group = request.args['group']
+    keyword = request.args['keyword']
+    keyword_value = request.args['keyword_value']
+
+    columns = request.args['columns'] # string of selected columns
     columns = ["entry_id"] + columns.split()
 
     # hotfix until tags get multiselectable
@@ -72,21 +74,26 @@ def filter_table():
         group = None
     else:
         group = [group]
-    if tag == "" or tag == "none":
-        tag = None
+    if keyword == "" or keyword == "none":
+        keyword = None
     else:
-        tag = [tag]
+        keyword = [keyword]
+    if keyword_value == "" or keyword_value == "none":
+        keyword_value = None
+    else:
+        keyword_value = [keyword_value]
+
 
     used_columns = ["entry_id", "path", "created_on", "added_on", "updated_on", "description"]
     # load table if a valid DB is selected
     if db_path != "" and os.path.exists(db_path):
         db_id = db.session.query(DBPath).filter(DBPath.path == db_path).one().id  # need this only while working with paths
         session = api.connect_database(db_path=db_path)
-        table = api.get_entry_table(session, group_names=group, keyword_names=tag, columns=used_columns)
+        table = api.get_entry_table(session, group_names=group, keyword_names=keyword, columns=used_columns)
     else:
         db_id = 0
         table = pd.DataFrame([], columns=used_columns)
-    print(type(table))
+
     # filter by search query
     if search_query != "":
 
@@ -148,9 +155,19 @@ def build_filter():
 
     # interaction with buildFilter() js function
     db_path = request.args['db_path']
+    selected_keyword = request.args['selected_keyword']
+
     session = api.connect_database(db_path=db_path)
-    out = {'groups' : api.get_all_groups(session=session),
-           'tags'   : api.get_all_keywords(session=session).keys()}
+
+    keywords = api.get_all_keywords(session=session)
+    if selected_keyword != "none":
+        values = keywords[selected_keyword]
+    else:
+        values = ["None..."]
+
+    out = {'groups'   : api.get_all_groups(session=session),
+           'keywords' : keywords.keys(),
+           'values'   : values}
 
     return json.dumps(out)
 
