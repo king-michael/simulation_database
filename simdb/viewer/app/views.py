@@ -179,7 +179,10 @@ def build_filter():
 
     session = api.connect_database(db_path=db_path)
 
+    # get groups and count number of entries for each group
     groups = api.get_all_groups(session=session)
+    #session.query(Main).join(association_main_groups).join(Groups).filter(Groups.name == "Group 1").count()
+    #groups = [str(g[0]) + "(100)" for g in groups]
 
     # get keywords to display
     # only show keywords which are present in selected group
