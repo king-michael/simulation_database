@@ -3,7 +3,7 @@ from __future__ import print_function, nested_scopes, generators, absolute_impor
 import sys, os
 sys.path.append("..")
 from flask import render_template, request, redirect, flash, url_for, abort
-#from databaseModel import Main
+from simdb.databaseModel import *
 from simdb.viewer.databaseViewer import app
 from simdb.viewer.app import db
 from simdb.viewer.app.databaseModelApp import DBPath
@@ -11,6 +11,7 @@ from sqlalchemy.orm.exc import NoResultFound
 import simdb.databaseAPI as api
 import pandas as pd
 import json
+import itertools
 
 # page where we can add DBs
 # this will be moved to /view/ in a later step
@@ -57,44 +58,54 @@ def filter_table():
 
     # options which one could change in GUI in the future
     search_case_sensitive = False
+    used_columns = ["entry_id", "path", "created_on", "added_on", "updated_on", "description"]
 
     # interaction with filterTable() js function
     db_path = request.args['db_path'] # get the path to selected data base
     search_query = request.args['search_query'] # get the search query from search field
 
-    group = request.args['group']
-    keyword = request.args['keyword']
-    keyword_value = request.args['keyword_value']
+    selected_group = request.args['selected_group']
+    selected_keyword = request.args['selected_keyword']
+    selected_keyword_value = request.args['selected_keyword_value']
 
     columns = request.args['columns'] # string of selected columns
     columns = ["entry_id"] + columns.split()
 
+    # some checks
+    if db_path == "":
+        return "<p style='align=center'>No database selected</p>"
+    if not os.path.exists(db_path):
+        return "<p style='align=center'>Path to database not found</p>"
+
     # hotfix until tags get multiselectable
-    if group == "" or group == "none":
-        group = None
+    if selected_group == "" or selected_group == "none":
+        selected_group = None
     else:
-        group = [group]
-    if keyword == "" or keyword == "none":
-        keyword = None
-    else:
-        keyword = [keyword]
-    if keyword_value == "" or keyword_value == "none":
-        keyword_value = None
-    else:
-        keyword_value = [keyword_value]
+        selected_group = [selected_group]
 
-
-    used_columns = ["entry_id", "path", "created_on", "added_on", "updated_on", "description"]
-    # load table if a valid DB is selected
-    if db_path != "" and os.path.exists(db_path):
-        db_id = db.session.query(DBPath).filter(DBPath.path == db_path).one().id  # need this only while working with paths
-        session = api.connect_database(db_path=db_path)
-        table = api.get_entry_table(session, group_names=group, keyword_names=keyword, columns=used_columns)
+    if selected_keyword == "" or selected_keyword == "none":
+        selected_keyword = None
     else:
-        db_id = 0
-        table = pd.DataFrame([], columns=used_columns)
+        selected_keyword = [selected_keyword]
+
+    if selected_keyword_value == "" or selected_keyword_value == "none":
+        apply_filter = None
+    else:
+        apply_filter = Main.keywords.any(name=selected_keyword[0], value=selected_keyword_value) # value=selected_keyword_value[0]
+        selected_keyword = None
+
+    # load table
+    db_id = db.session.query(DBPath).filter(DBPath.path == db_path).one().id  # need this only while working with paths
+    session = api.connect_database(db_path=db_path)
+    table = api.get_entry_table(session, group_names=selected_group, keyword_names=selected_keyword, columns=used_columns, apply_filter=apply_filter)
+
+    # stop if table is empty
+    if table.shape[0] == 0:
+        return "<p style='align=center'>No entries found</p>"
+
 
     # filter by search query
+    # export this to utils
     if search_query != "":
 
         # convert search query string to list of statements
@@ -129,6 +140,10 @@ def filter_table():
             if len(table) == 0:
                 return table.to_html(classes=str("table sortable"), escape=False, index=False) # convert to HTML
 
+    # stop if table is empty
+    if table.shape[0] == 0:
+        return "<p style='align=center'>No entries found</p>"
+
     # convert table to proper HTML
     pd.set_option('display.max_colwidth', -1) # let pandas print the full entry to HTML table
 
@@ -154,18 +169,35 @@ def filter_table():
 def build_filter():
 
     # interaction with buildFilter() js function
-    db_path = request.args['db_path']
+    db_path = request.args['db_path']  # get the path to selected data base
+    search_query = request.args['search_query']  # get the search query from search field
+
+    selected_group = request.args['selected_group']
     selected_keyword = request.args['selected_keyword']
+    selected_keyword_value = request.args['selected_keyword_value']
+
 
     session = api.connect_database(db_path=db_path)
 
-    keywords = api.get_all_keywords(session=session)
-    if selected_keyword != "none":
+    groups = api.get_all_groups(session=session)
+
+    # get keywords to display
+    # only show keywords which are present in selected group
+    if selected_group == "" or selected_group == "none":
+        keywords = api.get_all_keywords(session=session)
+    else:
+        query = session.query(Keywords.name, Keywords.value)\
+                       .join(Main).join(association_main_groups).join(Groups)\
+                       .filter(Groups.name == selected_group).distinct()
+        keywords = dict((k, list(zip(*v))[1]) for k, v in itertools.groupby(query.all(), lambda x: x[0]))
+
+
+    if selected_keyword in keywords.keys():
         values = keywords[selected_keyword]
     else:
-        values = ["None..."]
+        values = []
 
-    out = {'groups'   : api.get_all_groups(session=session),
+    out = {'groups'   : groups,
            'keywords' : keywords.keys(),
            'values'   : values}
 

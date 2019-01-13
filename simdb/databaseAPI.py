@@ -188,6 +188,7 @@ def get_all_groups(session):
 def get_entry_table(session,
                     group_names=None,
                     keyword_names=None,
+                    apply_filter=None,
                     columns=('entry_id', 'path', 'owner', 'url', 'type', 'description'),
                     order_by='id',
                     order='assending'):
@@ -200,7 +201,11 @@ def get_entry_table(session,
     group_names : None or Union[List,Tuple]
         names of groups, logic for groups is OR
     keyword_names : None or Union[List,Tuple]
-        logic for tags is AND
+        logic for keywords is AND
+    apply_filter: None or sqlalchemy.sql.selectable.Exists
+        this a way to perform a more complex selection
+        i.e. Main.keywords.any(name="keyword1", value="value1")
+             and_(Main.keywords.any(name="keyword1", value="v1"), Main.keywords.any(name="keyword2", value="v2"))
     columns : Union[List,Tuple]
         columns which should be displayed
     order_by : None or str
@@ -232,6 +237,16 @@ def get_entry_table(session,
                      .filter(and_(Main.keywords.any(name=name) for name in keyword_names))\
                      .distinct(Main.id)
 
+    # apply additional filter
+    if apply_filter is not None:
+
+        if not isinstance(group_names, Iterable):
+            query = query.join(association_main_groups).join(Groups)
+        if not isinstance(keyword_names, Iterable):
+            query = query.join(Keywords)
+        
+        query = query.filter(apply_filter).distinct(Main.id)
+
     if order_by is not None:
         if isinstance(order_by, string_types):
             order_by = getattr(Main, order_by, 'id')
@@ -241,6 +256,8 @@ def get_entry_table(session,
             query = query.order_by(order_by.desc())
         else:
             query = query.order_by(order_by)
+
+
 
     # get entries as pandas table
     df = pd.read_sql(query.statement, session.bind, index_col="id")
