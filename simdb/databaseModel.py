@@ -58,6 +58,8 @@ class Main(Base):
 
     # book keeping
     priority = Column(Integer(), default=0)
+    deleted = Column(Boolean(), default=False)
+    archived = Column(Boolean(), default=False)
 
     children = relationship('AssociationMainMain',
                             back_populates="parent",
@@ -173,10 +175,39 @@ class Groups(Base):
                            # passive_deletes=True,  # apply delete also for childs
                            )
 
+    keywords = relationship('GroupKeywords',
+                            backref='group_name',  # check cascade_backrefs
+                            lazy='joined',  # lazy='joined' -> we can join this
+                            cascade="all, delete-orphan",  # apply delete also for childs
+                            passive_deletes=True,  # apply delete also for childs
+                            )
+
+    keywords_query = relationship('GroupKeywords',
+                                  lazy='dynamic',  # lazy='dynamic' -> returns query so we can filter
+                                  viewonly=True,  # only a view
+                                  )  # lazy='dynamic' -> returns query so we can filter
+
     def __repr__(self):
         return "{}(name='{}')".format(
             self.__class__.__name__,
             self.name)
+
+
+class GroupKeywords(Base):
+    __tablename__ = 'groupkeywords'
+
+    id = Column(Integer(), primary_key=True, index=True)
+    group_id =  Column(Integer(), ForeignKey('groups.id') , index=True)
+    name  =  Column(String(255), index=True)
+    value =  Column(String(255), nullable=True)
+    priority = Column(Integer(), default=0)
+
+    def __repr__(self):
+        return "{}(group_id='{}', name='{}', value='{}')".format(
+            self.__class__.__name__,
+            self.group_id,
+            self.name,
+            self.value)
 
 
 class MetaGroups(Base):
