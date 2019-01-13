@@ -141,10 +141,11 @@
 
                     for(i in data.groups) {
 
+                        var for_display = data.groups[i] + " (" + data.groups_count[i] + ")"
                         if (data.groups[i] == selected_group) {
-                            out += "<option selected='selected' value='" + data.groups[i] + "'>" + data.groups[i] + "</option>";
+                            out += "<option selected='selected' value='" + data.groups[i] + "'>" + for_display + "</option>";
                         } else {
-                            out += "<option value='" + data.groups[i] + "'>" + data.groups[i] + "</option>";
+                            out += "<option value='" + data.groups[i] + "'>" + for_display + "</option>";
                         }
                     }
 
@@ -159,10 +160,11 @@
                     }
                     for(i in data.keywords) {
 
+                        var for_display = data.keywords[i] + " (" + data.keywords_count[i] + ")"
                         if (data.keywords[i] == selected_keyword) {
-                            out += "<option selected='selected' value='" + data.keywords[i] + "'>" + data.keywords[i] + "</option>";
+                            out += "<option selected='selected' value='" + data.keywords[i] + "'>" + for_display + "</option>";
                         } else {
-                            out += "<option value='" + data.keywords[i] + "'>" + data.keywords[i] + "</option>";
+                            out += "<option value='" + data.keywords[i] + "'>" + for_display + "</option>";
                         }
                     }
                     $("#select_keyword").html(out); // push options to html

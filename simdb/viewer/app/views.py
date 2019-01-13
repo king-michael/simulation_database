@@ -179,10 +179,16 @@ def build_filter():
 
     session = api.connect_database(db_path=db_path)
 
-    # get groups and count number of entries for each group
+    # get groups
     groups = api.get_all_groups(session=session)
-    #session.query(Main).join(association_main_groups).join(Groups).filter(Groups.name == "Group 1").count()
-    #groups = [str(g[0]) + "(100)" for g in groups]
+    groups = [g[0] for g in groups]
+
+    # count number of entries for each group
+    groups_count = []
+    query = session.query(Main.entry_id).join(association_main_groups).join(Groups)
+    for g in groups:
+        c = query.filter(Groups.name == g).count()
+        groups_count.append(str(c))
 
     # get keywords to display
     # only show keywords which are present in selected group
@@ -194,6 +200,18 @@ def build_filter():
                        .filter(Groups.name == selected_group).distinct()
         keywords = dict((k, list(zip(*v))[1]) for k, v in itertools.groupby(query.all(), lambda x: x[0]))
 
+    # count number of entries for each keyword
+    keywords_count = []
+    query = session.query(Main.entry_id).join(association_main_groups).join(Groups).join(Keywords)
+    if selected_group == "" or selected_group == "none":
+        for k in keywords.keys():
+            c = query.filter(Keywords.name == k).count()
+            keywords_count.append(str(c))
+    else:
+        print(selected_group)
+        for k in keywords.keys():
+            c = query.filter(Groups.name == selected_group, Keywords.name == k).count()
+            keywords_count.append(str(c))
 
     if selected_keyword in keywords.keys():
         values = keywords[selected_keyword]
@@ -201,7 +219,9 @@ def build_filter():
         values = []
 
     out = {'groups'   : groups,
+           'groups_count' : groups_count,
            'keywords' : keywords.keys(),
+           'keywords_count' : keywords_count,
            'values'   : values}
 
     return json.dumps(out)
