@@ -244,7 +244,7 @@ def get_entry_table(session,
             query = query.join(association_main_groups).join(Groups)
         if not isinstance(keyword_names, Iterable):
             query = query.join(Keywords)
-        
+
         query = query.filter(apply_filter).distinct(Main.id)
 
     if order_by is not None:
@@ -321,6 +321,8 @@ def sim2dict(sim):
     sim_dict['children'] = sorted([sim2dict(entry.child) for entry in sim.children],
                                   key=lambda x: x['entry_id'])
     sim_dict['keywords'] = dict((k.name, k.value) for k in sim.keywords)
+
+    sim_dict['groups'] = [g.name for g in sim.groups]
     return sim_dict
 
 # =========================================================================== #
@@ -787,7 +789,7 @@ def remove_meta_data(session, entry_id, meta_group_name, **kwargs):
 
 
 # TODO change group based functions after databaseModel changed
-def add_group(db_path, entry_id, group_name):
+def add_to_group(session, entry_id, group_name):
     """Add simulation to group.
 
     Parameters
@@ -804,28 +806,20 @@ def add_group(db_path, entry_id, group_name):
     True if entry was added to group, otherwise False.
     """
 
-    # open databae
-    s = connect_database(db_path)
-    status = False
-
-    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
+    entry = session.query(Main).filter(Main.entry_id == entry_id).first()
 
     if entry:
 
         # get group if already in DB or create new group
-        group = s.query(Groups).filter(Groups.name == group_name).first()
+        group = session.query(Groups).filter(Groups.name == group_name).first()
         if not group:
             group = Groups(name=group_name)
-            s.add(group)
-            s.commit()
+            session.add(group)
+            session.flush()
 
         group.entries.append(entry)
-        s.commit()
-        status = True
 
-    s.close()
-
-    return status
+    return group
 
 
 def remove_group(db_path, entry_id, group_name):
