@@ -39,15 +39,10 @@
         } );
     </script>
 
-    <!--AB: I have no idea what this is for; I guess this was a experiment-->
-    <!--<script>-->
-        <!--$(document).ready(function () {-->
-            <!--$('.selectpicker').selectpicker();-->
-        <!--})-->
-    <!--</script>-->
-
     <script>
-        // run live search on pandas table
+        // run live search and filter by selected groups/keywords
+        // this function is called if something is changed in filter
+
         function filterTable(){
             // collect selected options
             // call filter view
@@ -91,10 +86,29 @@
                 columns += " description ";
             }
 
+            // get sort by key
+            var sort_ascending = $( ".sort_ascending" ).attr("id");
+            var sort_descending = $( ".sort_descending" ).attr("id");
+            if(sort_ascending == undefined){
+                sort_ascending = "";
+            }
+            if(sort_descending == undefined){
+                sort_descending = "";
+            }
+
             //value = value.trim(); // remove any spaces around the text
                 $.ajax({
                     url: "filter",                 // call the search page
-                    data: {db_path: db_path, search_query: search_query, selected_group: selected_group, selected_keyword: selected_keyword, selected_keyword_value: selected_keyword_value, columns: columns},     // get results from search page by sending value
+                    data: {                        // get results from search page by sending value
+                        db_path: db_path,
+                        search_query: search_query,
+                        selected_group: selected_group,
+                        selected_keyword: selected_keyword,
+                        selected_keyword_value: selected_keyword_value,
+                        columns: columns,
+                        sort_ascending: sort_ascending,
+                        sort_descending: sort_descending
+                    },
                     dataType: "html",
                     success: function(data){
                         $("#results").html(data);  // push resulting table to something with id=results
@@ -189,6 +203,27 @@
                 }
 
                 });
+        }
+    </script>
+    <script>
+        // sort table
+        function sortTable(sort_by){
+
+            // get clicked button
+            var button = $( "#sort_by_" + sort_by );
+
+            // remove other sort by selection if there is one
+            $( ".sort_button:not(#" + button.attr('id') + ")" ).removeClass("sort_ascending sort_descending");
+
+            // toggle class of button
+            // none -> sort_ascending -> sort_descending -> none
+            if(button.hasClass("sort_ascending")){
+                button.toggleClass("sort_ascending sort_descending");
+            } else if(button.hasClass("sort_descending")) {
+                button.removeClass("sort_descending");
+            } else {
+                button.addClass("sort_ascending");
+            }
         }
     </script>
 

@@ -71,12 +71,17 @@ def filter_table():
     columns = request.args['columns'] # string of selected columns
     columns = ["entry_id"] + columns.split()
 
-    # some checks
+    sort_ascending = request.args['sort_ascending']
+    sort_descending = request.args['sort_descending']
+
+
+    # some checks on selected path
     if db_path == "":
         return "<p style='align=center'>No database selected</p>"
     if not os.path.exists(db_path):
         return "<p style='align=center'>Path to database not found</p>"
 
+    # handle selected groups and keywords
     # hotfix until tags get multiselectable
     if selected_group == "" or selected_group == "none":
         selected_group = None
@@ -94,10 +99,27 @@ def filter_table():
         apply_filter = Main.keywords.any(name=selected_keyword[0], value=selected_keyword_value) # value=selected_keyword_value[0]
         selected_keyword = None
 
+    # handle sort by
+    if not sort_ascending and not sort_descending:
+        # default values
+        order_by = "id"
+        order = "ascending"
+    elif not sort_ascending:
+        order_by = sort_descending[8:]
+        order = "descending"
+    elif not sort_descending:
+        order_by = sort_ascending[8:]
+        order = "ascending"
+    else:
+        # something went wrong, go to default
+        order_by = "id"
+        order = "ascending"
+    print(order_by, order)
+
     # load table
     db_id = db.session.query(DBPath).filter(DBPath.path == db_path).one().id  # need this only while working with paths
     session = api.connect_database(db_path=db_path)
-    table = api.get_entry_table(session, group_names=selected_group, keyword_names=selected_keyword, columns=used_columns, apply_filter=apply_filter)
+    table = api.get_entry_table(session, group_names=selected_group, keyword_names=selected_keyword, columns=used_columns, apply_filter=apply_filter, order_by=order_by, order=order)
 
     # stop if table is empty
     if table.shape[0] == 0:
@@ -160,6 +182,16 @@ def filter_table():
     table["created_on"] = table["created_on"].apply(lambda x: x.strftime('%Y/%m/%d') if x is not None else "--")
 
     table = table[columns]
+
+    # add buttons for sorting to columns
+    button_template = '{column_name} <input id="sort_by_{column_name}" type="button" class="sort_button {sort_class}" onClick="sortTable(\'{column_name}\');filterTable()" />'
+
+    html_columns = []
+    for c in table.columns:
+        sort_class = "sort_" + order if c == order_by else ""
+        html_columns.append(button_template.format(column_name=c, sort_class=sort_class))
+    table.columns = html_columns
+
     results = table.to_html(classes=str("table sortable"), escape=False, index=False) # convert to HTML
 
     return results
@@ -208,7 +240,6 @@ def build_filter():
             c = query.filter(Keywords.name == k).count()
             keywords_count.append(str(c))
     else:
-        print(selected_group)
         for k in keywords.keys():
             c = query.filter(Groups.name == selected_group, Keywords.name == k).count()
             keywords_count.append(str(c))

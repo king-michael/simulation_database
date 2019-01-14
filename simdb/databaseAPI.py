@@ -211,7 +211,7 @@ def get_entry_table(session,
     order_by : None or str
         Whether results should be sorted or not.
     order : str
-        `assending` or `desending`
+        `ascending` or `descending`
 
     Returns
     -------
@@ -250,9 +250,9 @@ def get_entry_table(session,
     if order_by is not None:
         if isinstance(order_by, string_types):
             order_by = getattr(Main, order_by, 'id')
-        if order == 'assending':
+        if order == 'ascending':
             query = query.order_by(order_by.asc())
-        elif order == 'desending':
+        elif order == 'descending':
             query = query.order_by(order_by.desc())
         else:
             query = query.order_by(order_by)
