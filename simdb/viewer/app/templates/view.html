@@ -1,31 +1,42 @@
 {% extends 'main.html' %}
 {% from 'macros.html' import icon %}
 {% block content %}
-    <div class="row">
-
-        {% if databases|count > 0 %}
-            Please select DB:
-            <br>
-
+<div class="container-fluid">
+	<div id="filter" class="row">
+		<div class="col-md-3">
+            {% if databases|count > 0 %}
             <!--select database-->
             <select id="select_table" name="select_table" onchange="filterTable();buildFilter()" size="5">
                 {%- for db in databases %}
                     <option value="{{ db.path }}">{{ db.path }}</option>
                 {%- endfor %}
             </select>
-
+            {% else %}
+            <p>Please add a database.</p>
+            {% endif %}
+		</div>
+		<div class="col-md-3">
             <!--select group-->
             <select id="select_group" name="select_group" onchange="filterTable();buildFilter()" size="5">
             </select>
-
+		</div>
+		<div class="col-md-3">
             <!--select keyword-->
             <select id="select_keyword" name="select_keyword" onchange="filterTable();buildFilter()" size="5">
             </select>
-
+		</div>
+		<div class="col-md-3">
             <!--select keyword value-->
             <select id="select_keyword_value" name="select_keyword_value" onchange="filterTable()" size="5">
             </select>
-
+		</div>
+	</div>
+	<div id="search" class="row">
+		<div class="col-md-6">
+            <!--search field-->
+            <input id="search_field" type="text" onkeyup="filterTable()" placeholder="Search in Entry ID and Description ...">
+		</div>
+		<div class="col-md-6">
             <!--which columns to show-->
             <select id="select_columns" class="selectpicker bootstrap-select-with-dropdown-button" multiple data-actions-box="true" multiple>
                 <option value="path">Path</option>
@@ -34,17 +45,21 @@
                 <option value="updated_on">Updated_on</option>
                 <option value="description">Description</option>
             </select>
-
-            <br>
-            <!--search field-->
-            <input id="search_field" type="text" onkeyup="filterTable()" placeholder="Search in Entry ID and Description ..." size="100">
-
-        {% else %}
-            <p>No entries found</h3>
-        {% endif %}
-
-    </div>
-
-    <!-- container where results are pushed in by filterTable() -->
-    <div id="results"></div>
+		</div>
+	</div>
+	<div id="toolbox" class="row">
+		<div class="col-md-4">
+            <p>Toolbox. Coming soon.</p>
+		</div>
+		<div class="col-md-4">
+		</div>
+		<div class="col-md-4">
+		</div>
+	</div>
+	<div class="row">
+		<div id="results" class="col-md-12">
+            <!-- container where results are pushed in by filterTable() -->
+		</div>
+	</div>
+</div>
 {% endblock %}
