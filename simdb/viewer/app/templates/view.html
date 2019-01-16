@@ -27,13 +27,13 @@
             </select>
 
             <!--which columns to show-->
-            <div>
-                <input type="checkbox" id="show_path" value="show_path" onchange="filterTable()" checked> Path<br>
-                <input type="checkbox" id="show_created_on" value="show_created_on" onchange="filterTable()">Created on<br>
-                <input type="checkbox" id="show_added_on" value="show_added_on" onchange="filterTable()">Added on<br>
-                <input type="checkbox" id="show_updated_on" value="show_updated_on" onchange="filterTable()">Updated on<br>
-                <input type="checkbox" id="show_description" value="show_description" onchange="filterTable()" checked>Description<br>
-            </div>
+            <select id="select_columns" class="selectpicker bootstrap-select-with-dropdown-button" multiple data-actions-box="true" multiple>
+                <option value="path">Path</option>
+                <option value="created_on">Created on</option>
+                <option value="added_on">Added on</option>
+                <option value="updated_on">Updated_on</option>
+                <option value="description">Description</option>
+            </select>
 
             <br>
             <!--search field-->

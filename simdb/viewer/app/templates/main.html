@@ -39,6 +39,7 @@
 
 
     <script>
+        // this is for the add database button
         $( function() {
         $( "#add_dialog" ).dialog({
           autoOpen: false,
@@ -62,6 +63,7 @@
         // run live search and filter by selected groups/keywords
         // this function is called if something is changed in filter
 
+
         function filterTable(){
             // collect selected options
             // call filter view
@@ -82,28 +84,12 @@
             // get search query
             var search_query = $( "#search_field" ).val();
 
-            // get selected columns
-            var columns = "";
 
-            if($( "#show_path" ).prop( "checked" )){
-                columns += " path ";
-            }
-
-            if($( "#show_created_on" ).prop( "checked" )){
-                columns += " created_on ";
-            }
-
-            if($( "#show_added_on" ).prop( "checked" )){
-                columns += " added_on ";
-            }
-
-            if($( "#show_updated_on" ).prop( "checked" )){
-                columns += " updated_on ";
-            }
-
-            if($( "#show_description" ).prop( "checked" )) {
-                columns += " description ";
-            }
+            // get selected columns with bootstrap select
+            var selected_columns = "";
+            $( "#select_columns" ).find("option:selected").each(function() {
+                selected_columns = selected_columns + " " + $(this).val();
+            });
 
             // get sort by key
             var sort_ascending = $( ".sort_ascending" ).attr("id");
@@ -124,9 +110,9 @@
                         selected_group: selected_group,
                         selected_keyword: selected_keyword,
                         selected_keyword_value: selected_keyword_value,
-                        columns: columns,
                         sort_ascending: sort_ascending,
-                        sort_descending: sort_descending
+                        sort_descending: sort_descending,
+                        selected_columns: selected_columns
                     },
                     dataType: "html",
                     success: function(data){
@@ -319,6 +305,14 @@
     {% block content %}{% endblock %}
 </div>
 
+<script>
+    // decorators to add functionality to HTML tags
+    // this has to be at the end of body
 
+    // filter table after selection of column has changed
+    $('#select_columns').change(function () {
+        filterTable();
+    });
+</script>
 </body>
 </html>

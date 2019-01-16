@@ -68,12 +68,10 @@ def filter_table():
     selected_keyword = request.args['selected_keyword']
     selected_keyword_value = request.args['selected_keyword_value']
 
-    columns = request.args['columns'] # string of selected columns
-    columns = ["entry_id"] + columns.split()
-
     sort_ascending = request.args['sort_ascending']
     sort_descending = request.args['sort_descending']
 
+    selected_columns = ["entry_id"] + request.args['selected_columns'].split()
 
     # some checks on selected path
     if db_path == "":
@@ -114,7 +112,6 @@ def filter_table():
         # something went wrong, go to default
         order_by = "id"
         order = "ascending"
-    print(order_by, order)
 
     # load table
     db_id = db.session.query(DBPath).filter(DBPath.path == db_path).one().id  # need this only while working with paths
@@ -181,7 +178,7 @@ def filter_table():
     table["added_on"] = table["added_on"].apply(lambda x: x.strftime('%Y/%m/%d'))
     table["created_on"] = table["created_on"].apply(lambda x: x.strftime('%Y/%m/%d') if x is not None else "--")
 
-    table = table[columns]
+    table = table[selected_columns]
 
     # add buttons for sorting to columns
     button_template = '{column_name} <input id="sort_by_{column_name}" type="button" class="sort_button {sort_class}" onClick="sortTable(\'{column_name}\');filterTable()" />'
