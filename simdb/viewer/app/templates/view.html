@@ -2,39 +2,75 @@
 {% from 'macros.html' import icon %}
 {% block content %}
 <div class="container-fluid">
-	<div id="filter" class="row">
+
+    <!-- (1.) ROW FILTER-->
+	<div id="filter" class="row row-container">
+
+        <!-- |||| -->
+        <!-- ^    -->
 		<div class="col-md-3">
-            {% if databases|count > 0 %}
+
             <!--select database-->
-            <select id="select_table" name="select_table" onchange="filterTable();buildFilter()" size="5">
-                {%- for db in databases %}
-                    <option value="{{ db.path }}">{{ db.path }}</option>
-                {%- endfor %}
-            </select>
-            {% else %}
-            <p>Please add a database.</p>
-            {% endif %}
-		</div>
+            <div id="select_database" class="btn-group-vertical btn-group-toggle scrollable-group" data-toggle="buttons">
+                {% if databases|count > 0 %}
+                    {%- for db in databases %}
+                        <label class="btn btn-default">
+                            <input type="radio" name="options" autocomplete="off" value="{{ db.path }}">
+                            <i class="fas fa-database"></i> <span>{{ db.comment }}</span></br>
+                            <span>{{ db.path }}</span>
+                        </label>
+                    {%- endfor %}
+                {% else %}
+                    <p class="scrollable-group-placeholder">No Database found</p>
+                {% endif %}
+            </div>
+
+        </div>
+
+
+
+        <!-- |||| -->
+        <!--  ^   -->
 		<div class="col-md-3">
+
             <!--select group-->
-            <select id="select_group" name="select_group" onchange="filterTable();buildFilter()" size="5">
-            </select>
-		</div>
-		<div class="col-md-3">
+            <div id="select_group" class="btn-group-vertical btn-group-toggle scrollable-group" data-toggle="buttons">
+                <p class="scrollable-group-placeholder">Groups</p>
+            </div>
+        </div>
+
+
+        <!-- |||| -->
+        <!--   ^  -->
+        <div class="col-md-3">
+
             <!--select keyword-->
-            <select id="select_keyword" name="select_keyword" onchange="filterTable();buildFilter()" size="5">
-            </select>
-		</div>
-		<div class="col-md-3">
+            <div id="select_keyword" class="btn-group-vertical btn-group-toggle scrollable-group" data-toggle="buttons">
+                <p class="scrollable-group-placeholder">Keywords</p>
+            </div>
+
+        </div>
+
+
+        <!-- |||| -->
+        <!--    ^ -->
+        <div class="col-md-3">
+
             <!--select keyword value-->
-            <select id="select_keyword_value" name="select_keyword_value" onchange="filterTable()" size="5">
-            </select>
-		</div>
-	</div>
-	<div id="search" class="row">
+            <div id="select_keyword_value" class="btn-group-vertical btn-group-toggle scrollable-group" data-toggle="buttons">
+                <p class="scrollable-group-placeholder">Values</p>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- (2.) ROW SEARCH BAR-->
+    <div id="search" class="row row-container">
+
 		<div class="col-md-6">
             <!--search field-->
-            <input id="search_field" type="text" onkeyup="filterTable()" placeholder="Search in Entry ID and Description ...">
+            <input id="search_field" type="text" class="form-control" onkeyup="filterTable()" placeholder="Search in Entry ID and Description ...">
 		</div>
 		<div class="col-md-6">
             <!--which columns to show-->
@@ -45,9 +81,32 @@
                 <option value="updated_on">Updated_on</option>
                 <option value="description">Description</option>
             </select>
-		</div>
+
+<div class="btn-group" role="group" aria-label="Display options">
+  <!--<button type="button" class="btn btn-secondary">1</button>-->
+  <!--<button type="button" class="btn btn-secondary">2</button>-->
+
+  <div class="btn-group" role="group">
+    <button id="btnGroupDrop1" type="button"
+            class="btn btn-secondary dropdown-toggle"
+            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      <i class="fas fa-columns"></i>
+    </button>
+    <div class="dropdown-menu" aria-labelledby="btnGroupDrop1">
+      <a class="dropdown-item" href="#!">Dropdown link</a>
+      <a class="dropdown-item" href="#!">Dropdown link</a>
+    </div>
+  </div>
+</div>
+
+
+
+
+        </div>
 	</div>
-	<div id="toolbox" class="row">
+
+    <!-- (3.) ROW TOOLBOX-->
+    <div id="toolbox" class="row row-container">
 		<div class="col-md-4">
             <p>Toolbox. Coming soon.</p>
 		</div>
@@ -56,10 +115,13 @@
 		<div class="col-md-4">
 		</div>
 	</div>
-	<div class="row">
+
+    <!-- RESULTS TABLE -->
+	<div class="row row-container">
 		<div id="results" class="col-md-12">
             <!-- container where results are pushed in by filterTable() -->
 		</div>
 	</div>
+
 </div>
 {% endblock %}

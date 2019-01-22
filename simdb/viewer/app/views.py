@@ -201,16 +201,17 @@ def build_filter():
     db_path = request.args['db_path']  # get the path to selected data base
     search_query = request.args['search_query']  # get the search query from search field
 
-    selected_group = request.args['selected_group']
-    selected_keyword = request.args['selected_keyword']
-    selected_keyword_value = request.args['selected_keyword_value']
-
+    # this data is send as coma separated list
+    selected_groups = request.args['selected_group'].split(",")
+    selected_keywords = request.args['selected_keyword'].split(",")
+    selected_keyword_value = request.args['selected_keyword_value'].split(",")
 
     session = api.connect_database(db_path=db_path)
 
-    # get groups
+    # get all groups in database
     groups = api.get_all_groups(session=session)
     groups = [g[0] for g in groups]
+    print("---",groups)
 
     # count number of entries for each group
     groups_count = []
@@ -221,35 +222,43 @@ def build_filter():
 
     # get keywords to display
     # only show keywords which are present in selected group
-    if selected_group == "" or selected_group == "none":
+    if selected_groups == [""]:
         keywords = api.get_all_keywords(session=session)
     else:
         query = session.query(Keywords.name, Keywords.value)\
                        .join(Main).join(association_main_groups).join(Groups)\
-                       .filter(Groups.name == selected_group).distinct()
+                       .filter(Groups.name.in_(selected_groups)).distinct()
         keywords = dict((k, list(zip(*v))[1]) for k, v in itertools.groupby(query.all(), lambda x: x[0]))
 
     # count number of entries for each keyword
     keywords_count = []
     query = session.query(Main.entry_id).join(association_main_groups).join(Groups).join(Keywords)
-    if selected_group == "" or selected_group == "none":
+    if selected_groups == [""]:
         for k in keywords.keys():
             c = query.filter(Keywords.name == k).count()
             keywords_count.append(str(c))
     else:
         for k in keywords.keys():
-            c = query.filter(Groups.name == selected_group, Keywords.name == k).count()
+            c = query.filter(Groups.name.in_(selected_groups), Keywords.name == k).count()
             keywords_count.append(str(c))
 
-    if selected_keyword in keywords.keys():
-        values = keywords[selected_keyword]
-    else:
+    if len(selected_keywords) > 1:
+        # more than one keyword selected
         values = []
+    else:
+        if selected_keywords == [""]:
+            # no keyword selected
+            values = []
+        else:
+            # one keyword selected
+            values = keywords[selected_keywords[0]]
 
+    print(keywords.keys())
+    print(keywords_count)
     out = {'groups'   : groups,
-           'groups_count' : groups_count,
+           'groupscount' : groups_count,
            'keywords' : keywords.keys(),
-           'keywords_count' : keywords_count,
+           'keywordscount' : keywords_count,
            'values'   : values}
 
     return json.dumps(out)

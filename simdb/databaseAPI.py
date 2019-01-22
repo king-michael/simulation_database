@@ -786,16 +786,13 @@ def remove_meta_data(session, entry_id, meta_group_name, **kwargs):
         session.delete(meta_data)
 
 
-
-
-# TODO change group based functions after databaseModel changed
 def add_to_group(session, entry_id, group_name):
     """Add simulation to group.
 
     Parameters
     ----------
-    db_path : str
-        Path to the database
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
     entry_id : str
         Entry ID in database
     group_name: str
@@ -803,7 +800,7 @@ def add_to_group(session, entry_id, group_name):
 
     Returns
     -------
-    True if entry was added to group, otherwise False.
+    group : Groups
     """
 
     entry = session.query(Main).filter(Main.entry_id == entry_id).first()
@@ -817,18 +814,19 @@ def add_to_group(session, entry_id, group_name):
             session.add(group)
             session.flush()
 
-        group.entries.append(entry)
+        if group not in entry.groups:
+            group.entries.append(entry)
 
     return group
 
 
-def remove_group(db_path, entry_id, group_name):
+def remove_from_group(session, entry_id, group_name):
     """Remove simulation from group.
 
     Parameters
     ----------
-    db_path : str
-        Path to the database
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
     entry_id : str
         Entry ID in database
     group_name: str
@@ -839,22 +837,12 @@ def remove_group(db_path, entry_id, group_name):
     True if entry was removed from group, otherwise False.
     """
 
-    # open databae
-    s = connect_database(db_path)
-    status = False
-
-    entry = s.query(Main).filter(Main.entry_id == entry_id).first()
-    group = s.query(Groups).filter(Groups.name == group_name).first()
+    entry = session.query(Main).filter(Main.entry_id == entry_id).first()
+    group = session.query(Groups).filter(Groups.name == group_name).first()
 
     if group:
         if entry in group.entries:
             group.entries.remove(entry)
-            s.commit()
-            status = True
-
-    s.close()
-
-    return status
 
 
 
