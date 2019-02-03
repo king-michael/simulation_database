@@ -1,0 +1,12 @@
+<div class="footer_status">
+  {% if config.selected_database.id == None %}
+  <i class="fa fa-unlink"></i> <span class="db_name">No database selected</span> <span class="db_path"></span>
+  {% else %}
+  <i class="fa fa-link"></i> <span class="db_name">{{ config.selected_database.name }}</span> <span class="db_path">( {{ config.selected_database.path }} )</span>
+  {% endif %}
+</div>
+
+<div class="pull-right">
+  SIMPLTON - Based on Template by <a href="https://colorlib.com/wp/free-bootstrap-admin-dashboard-templates/">Colorlib</a>
+</div>
+<div class="clearfix"></div>
