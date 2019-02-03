@@ -13,18 +13,24 @@ class Config(object):
     # DEFAULT_THEME = "themes/dark"
     DEFAULT_THEME = None
 
+    SELECTED_DATABASE = {"id": None,
+                         "name": None,
+                         "path": None,
+                         "comment": None}
+
 
 class ProductionConfig(Config):
     DEBUG = False
 
+    # AB: We can use this if we want to use a real DB server
     # PostgreSQL database
-    SQLALCHEMY_DATABASE_URI = 'postgresql://{}:{}@{}:{}/{}'.format(
-        environ.get('GENTELELLA_DATABASE_USER', 'gentelella'),
-        environ.get('GENTELELLA_DATABASE_PASSWORD', 'gentelella'),
-        environ.get('GENTELELLA_DATABASE_HOST', 'db'),
-        environ.get('GENTELELLA_DATABASE_PORT', 5432),
-        environ.get('GENTELELLA_DATABASE_NAME', 'gentelella')
-    )
+    # SQLALCHEMY_DATABASE_URI = 'postgresql://{}:{}@{}:{}/{}'.format(
+    #     environ.get('GENTELELLA_DATABASE_USER', 'gentelella'),
+    #     environ.get('GENTELELLA_DATABASE_PASSWORD', 'gentelella'),
+    #     environ.get('GENTELELLA_DATABASE_HOST', 'db'),
+    #     environ.get('GENTELELLA_DATABASE_PORT', 5432),
+    #     environ.get('GENTELELLA_DATABASE_NAME', 'gentelella')
+    # )
 
 
 class DebugConfig(Config):

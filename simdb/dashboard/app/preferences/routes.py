@@ -75,8 +75,8 @@ def select_db():
 
     if id:
         id = int(id)
-        if id == current_app.config['selected_database']['id']:
-            current_app.config['selected_database'] = { "id"   : None,
+        if id == current_app.config['SELECTED_DATABASE']['id']:
+            current_app.config['SELECTED_DATABASE'] = { "id"   : None,
                                                         "name" : None,
                                                         "path" : None,
                                                         "comment" : None}
@@ -84,7 +84,7 @@ def select_db():
 
         else:
             sim_db = db.session.query(Database).filter_by(id = id).first()
-            current_app.config['selected_database'] = sim_db.__dict__
+            current_app.config['SELECTED_DATABASE'] = sim_db.__dict__
             return "selected"
     else:
         return "No database ID given."

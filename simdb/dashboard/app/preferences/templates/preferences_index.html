@@ -44,7 +44,7 @@
                 <tbody>
                 {%- for db in databases %}
 
-                    {% if db.id == config.selected_database.id %}
+                    {% if db.id == config.SELECTED_DATABASE.id %}
                         <tr class="entry selected-db">
                     {% else %}
                         <tr class="entry">
@@ -56,7 +56,7 @@
                         <td class="db_table_toolbox">
                             <ul class='nav navbar-right panel_toolbox'>
                                 <li><a class='select-link'><i class="fa fa-circle"></i></a></li>
-                                {% if db.id == config.selected_database.id %}
+                                {% if db.id == config.SELECTED_DATABASE.id %}
                                     <li><a class='edit-link disabled'><i class='fa fa-edit'></i></a></li>
                                     <li><a class='delete-link disabled'><i class='fa fa-close'></i></a></li>
                                 {% else %}
