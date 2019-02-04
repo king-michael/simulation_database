@@ -2,6 +2,7 @@ from app.preferences import blueprint
 from app import db
 from app.base.models import Database
 from flask import render_template, request, flash, current_app
+import os
 
 
 @blueprint.route('/')
@@ -9,28 +10,33 @@ def preferences_index():
 
     # if a path and comment are provided
     # add this DB to list of selectable DBs
-    try:
-        name = request.form['db_name']
-    except:
-        name = False
-    try:
-        path = request.form['db_path']
-    except:
-        path = False
-    try:
-        comment = request.form['db_comment']
-    except:
-        comment = ""
+    # try:
+    #     name = request.form['db_name']
+    # except:
+    #     name = False
+    # try:
+    #     path = request.form['db_path']
+    # except:
+    #     path = False
+    # try:
+    #     comment = request.form['db_comment']
+    # except:
+    #     comment = ""
+    #
+    # if name and path:
+    #     db.session.add(Database(name=name, path=path, comment=comment))
+    #     db.session.commit()
+    #     flash('Entry added successfully!')
 
-    if name and path:
-        db.session.add(Database(name=name, path=path, comment=comment))
-        db.session.commit()
-        flash('Entry added successfully!')
+    databases = db.session.query(Database).all()
+    # for d in databases:
+    #     if os.path.exists((d.path)):
+    #         print("Hey")
 
     # render the template
     return render_template(
         'preferences_index.html',
-        databases=db.session.query(Database).all()
+        databases = databases
     )
 
 @blueprint.route('/edit_db_table')

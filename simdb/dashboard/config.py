@@ -36,6 +36,11 @@ class ProductionConfig(Config):
 class DebugConfig(Config):
     DEBUG = True
 
+    SELECTED_DATABASE = {"id": 1,
+                         "name": "Andrej real example",
+                         "path": "../../examples/setup_databases/andrej/andrej_raw.db",
+                         "comment": "This database contains all simulations performed during PhD 2016-2019"}
+
 
 config_dict = {
     'Production': ProductionConfig,
