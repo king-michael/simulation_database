@@ -1,0 +1,23 @@
+.scrollable-group {
+    width: 100%;
+    height: 200px;
+    max-height: 200px;
+    overflow-x: hidden;
+    background-color: rgb(250, 250, 250);
+    border-radius: 1px;
+    border: solid;
+    border-width: 1px;
+    border-color: rgb(210,210,210);
+}
+
+.scrollable-group label {
+    text-align: left;
+    border-radius: 0px !important;
+}
+
+.scrollable-group-placeholder {
+    text-align: center;
+    color: rgb(180,180,180);
+    font-size: 200%;
+    padding-top: 50px;
+}
