@@ -191,7 +191,7 @@ def filter_table():
     #         table = table[mask]
     #         if len(table) == 0:
     #             return table.to_html(classes=str("table sortable"), escape=False, index=False) # convert to HTML
-    # 
+    #
     # # stop if table is empty
     # if table.shape[0] == 0:
     #     return "<p style='align=center'>No entries found</p>"
