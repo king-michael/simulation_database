@@ -141,7 +141,7 @@ def session_handler(db_path, create=False):
 # get_all_functions
 # =========================================================================== #
 
-def get_all_keywords(session):
+def get_all_keywords(session, groups=None, count=False):
     """
     Function to get all keywords with their values as list
 
@@ -149,6 +149,11 @@ def get_all_keywords(session):
     ----------
     session : sqlalchemy.orm.session.Session
         SQL Alchemy session
+    groups : list(str)
+        list of groups for selection
+    count : bool
+        return count together with keywords and
+        values {(str, i) : [(str, i)]}
 
     Returns
     -------
@@ -156,13 +161,51 @@ def get_all_keywords(session):
         Unique keyword dictonary.
     """
 
-    query = session.query(Keywords.name, Keywords.value).distinct()
-    keywords = dict((k, list(zip(*v))[1]) for k, v in itertools.groupby(query.all(), lambda x: x[0]))
+    if groups:
 
-    return keywords
+        keywords = session.query(Keywords.name).join(Main) \
+                                               .join(association_main_groups) \
+                                               .join(Groups).filter(Groups.name.in_(groups)).distinct().all()
+        keywords = [k[0] for k in keywords]
+
+        q = session.query(Keywords.value).join(Main) \
+                                         .join(association_main_groups) \
+                                         .join(Groups).filter(Groups.name.in_(groups))
+        values = [[v[0] for v in q.filter(Keywords.name == k).distinct().all()] for k in keywords]
+
+        if count:
+            q = session.query(Main.entry_id).filter(Groups.name.in_(groups)).join(Keywords)
+            keyword_counts = [q.filter(Keywords.name == k).distinct().count() for k in keywords]
+            values_count = [[q.filter(Keywords.name == k, Keywords.value == v).distinct().count() for v in val] for
+                            k, val in zip(keywords, values)]
+
+    else:
+
+        # no groups selected
+        keywords = session.query(Keywords.name).distinct().all()
+        keywords = [k[0] for k in keywords]
+
+        q = session.query(Keywords.value)
+        values = [[v[0] for v in q.filter_by(name=k).distinct().all()] for k in keywords]
+
+        if count:
+            q = session.query(Main.entry_id).join(Keywords)
+            keyword_counts = [q.filter(Keywords.name == k).distinct().count() for k in keywords]
+            values_count = [[q.filter(Keywords.name == k, Keywords.value == v).distinct().count() for v in val] for
+                            k, val in zip(keywords, values)]
+
+    if count:
+
+        out = dict(zip(zip(keywords, keyword_counts), [zip(v, vc) for v, vc in zip(values, values_count)]))
+
+    else:
+
+        out = dict(zip(keywords, values))
+
+    return out
 
 
-def get_all_groups(session):
+def get_all_groups(session, count=False):
     """
     Get all groups in database.
 
@@ -170,15 +213,22 @@ def get_all_groups(session):
     ----------
     session : sqlalchemy.orm.session.Session
         SQL Alchemy session
+    count : bool
+        return counts for entries in groups
+        together with group names [(str, i)]
 
     Returns
     -------
     groups : list[str]
         list of all groups.
     """
-
     groups = session.query(Groups.name).select_from(Groups).all()
-    return groups
+    groups = [g[0] for g in groups]
+    if count:
+        group_counts = [session.query(Main.entry_id).filter(Groups.name == g).count() for g in groups]
+        return zip(groups, group_counts)
+    else:
+        return groups
 
 
 # =========================================================================== #
