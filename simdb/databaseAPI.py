@@ -143,7 +143,7 @@ def session_handler(db_path, create=False):
 
 def get_all_keywords(session, groups=None, count=False):
     """
-    Function to get all keywords with their values as list
+    Function to get all keywords.
 
     Parameters
     ----------
@@ -153,31 +153,24 @@ def get_all_keywords(session, groups=None, count=False):
         list of groups for selection
     count : bool
         return count together with keywords and
-        values {(str, i) : [(str, i)]}
+        values list(tuple(str, int))
 
     Returns
     -------
-    tags : dict[str, list]
-        Unique keyword dictonary.
+    out : list(str)
+        Unique keyword list.
     """
 
     if groups:
 
         keywords = session.query(Keywords.name).join(Main) \
-                                               .join(association_main_groups) \
-                                               .join(Groups).filter(Groups.name.in_(groups)).distinct().all()
+            .join(association_main_groups) \
+            .join(Groups).filter(Groups.name.in_(groups)).distinct().all()
         keywords = [k[0] for k in keywords]
-
-        q = session.query(Keywords.value).join(Main) \
-                                         .join(association_main_groups) \
-                                         .join(Groups).filter(Groups.name.in_(groups))
-        values = [[v[0] for v in q.filter(Keywords.name == k).distinct().all()] for k in keywords]
 
         if count:
             q = session.query(Main.entry_id).filter(Groups.name.in_(groups)).join(Keywords)
             keyword_counts = [q.filter(Keywords.name == k).distinct().count() for k in keywords]
-            values_count = [[q.filter(Keywords.name == k, Keywords.value == v).distinct().count() for v in val] for
-                            k, val in zip(keywords, values)]
 
     else:
 
@@ -185,22 +178,65 @@ def get_all_keywords(session, groups=None, count=False):
         keywords = session.query(Keywords.name).distinct().all()
         keywords = [k[0] for k in keywords]
 
-        q = session.query(Keywords.value)
-        values = [[v[0] for v in q.filter_by(name=k).distinct().all()] for k in keywords]
-
         if count:
             q = session.query(Main.entry_id).join(Keywords)
             keyword_counts = [q.filter(Keywords.name == k).distinct().count() for k in keywords]
-            values_count = [[q.filter(Keywords.name == k, Keywords.value == v).distinct().count() for v in val] for
-                            k, val in zip(keywords, values)]
 
     if count:
+        out = zip(keywords, keyword_counts)
+    else:
+        out = keywords
 
-        out = dict(zip(zip(keywords, keyword_counts), [zip(v, vc) for v, vc in zip(values, values_count)]))
+    return out
+
+
+def get_all_keyword_values(session, keyword_name, groups=None, count=False):
+    """
+        Function to get all values of certain keyword.
+
+        Parameters
+        ----------
+        session : sqlalchemy.orm.session.Session
+            SQL Alchemy session
+        groups : list(str)
+            list of groups for selection
+        count : bool
+            return count together with keywords and
+            values list(tuple(str, int))
+
+        Returns
+        -------
+        out : list(str)
+            Unique keyword list.
+        """
+
+    if groups:
+
+        values = session.query(Keywords.value).join(Main) \
+            .join(association_main_groups) \
+            .join(Groups).filter(Groups.name.in_(groups)) \
+            .filter(Keywords.name == keyword_name).distinct().all()
+        values = [v[0] for v in values]
+
+        if count:
+            q = session.query(Main.entry_id).filter(Groups.name.in_(groups)).join(Keywords)
+            value_counts = [q.filter(Keywords.name == keyword_name, Keywords.value == v).distinct().count() for v in
+                            values]
 
     else:
 
-        out = dict(zip(keywords, values))
+        values = session.query(Keywords.value).filter_by(name=keyword_name).distinct().all()
+        values = [v[0] for v in values]
+
+        if count:
+            q = session.query(Main.entry_id).join(Keywords)
+            value_counts = [q.filter(Keywords.name == keyword_name, Keywords.value == v).distinct().count() for v in
+                            values]
+
+    if count:
+        out = zip(values, value_counts)
+    else:
+        out = values
 
     return out
 
@@ -215,7 +251,7 @@ def get_all_groups(session, count=False):
         SQL Alchemy session
     count : bool
         return counts for entries in groups
-        together with group names [(str, i)]
+        together with group names list((str, i))
 
     Returns
     -------
@@ -225,7 +261,7 @@ def get_all_groups(session, count=False):
     groups = session.query(Groups.name).select_from(Groups).all()
     groups = [g[0] for g in groups]
     if count:
-        group_counts = [session.query(Main.entry_id).filter(Groups.name == g).count() for g in groups]
+        group_counts = [session.query(Main.entry_id).filter(Main.groups.any(name=g)).count() for g in groups]
         return zip(groups, group_counts)
     else:
         return groups
@@ -241,7 +277,9 @@ def get_entry_table(session,
                     apply_filter=None,
                     columns=('entry_id', 'path', 'owner', 'url', 'type', 'description'),
                     order_by='id',
-                    order='assending'):
+                    order='assending',
+                    groups_logic="OR",
+                    keywords_logic="OR"):
     """
 
     Parameters
@@ -253,7 +291,7 @@ def get_entry_table(session,
     keyword_names : None or Union[List,Tuple]
         logic for keywords is AND
     apply_filter: None or sqlalchemy.sql.selectable.Exists
-        this a way to perform a more complex selection
+        this is a way to perform a more complex selection
         i.e. Main.keywords.any(name="keyword1", value="value1")
              and_(Main.keywords.any(name="keyword1", value="v1"), Main.keywords.any(name="keyword2", value="v2"))
     columns : Union[List,Tuple]
@@ -270,32 +308,38 @@ def get_entry_table(session,
     """
 
     # open database
-    query = session.query(Main.id,*[getattr(Main,attr) for attr in columns])
+    query = session.query(Main.id, *[getattr(Main, attr) for attr in columns]).join(Main.keywords)
 
     # filter by groups
     if isinstance(group_names, Iterable):
-        query = query.join(association_main_groups).join(Groups)
         # handle str or list/tuple
         if isinstance(group_names, string_types):
             query = query.filter(Groups.name == group_names)
         else:
-            query = query.filter(Groups.name.in_(group_names))
+            if groups_logic == "OR":
+                query = query.filter(or_(*[Main.groups.any(name=group) for group in group_names]))
+            elif groups_logic == "AND":
+                query = query.filter(and_(*[Main.groups.any(name=group) for group in group_names]))
+            else:
+                raise Exception("{} is not a valid option for groups_logic".format(groups_logic))
 
     # filter by keywords
     if isinstance(keyword_names, Iterable):
-        query = query.join(Keywords)\
-                     .filter(and_(Main.keywords.any(name=name) for name in keyword_names))\
-                     .distinct(Main.id)
+        if isinstance(keyword_names, string_types):
+            query = query.filter(Keywords.name == keyword_names)
+        else:
+            if keywords_logic == "OR":
+                query = query.filter(or_(*[Main.keywords.any(name=keyword) for keyword in keyword_names]))
+            elif keywords_logic == "AND":
+                query = query.filter(and_(*[Main.keywords.any(name=keyword) for keyword in keyword_names]))
+            else:
+                raise Exception("{} is not a valid option for keywords_logic".format(keywords_logic))
 
     # apply additional filter
     if apply_filter is not None:
+        query = query.filter(apply_filter)
 
-        if not isinstance(group_names, Iterable):
-            query = query.join(association_main_groups).join(Groups)
-        if not isinstance(keyword_names, Iterable):
-            query = query.join(Keywords)
-
-        query = query.filter(apply_filter).distinct(Main.id)
+    query = query.distinct(Main.id)
 
     if order_by is not None:
         if isinstance(order_by, string_types):
@@ -306,8 +350,6 @@ def get_entry_table(session,
             query = query.order_by(order_by.desc())
         else:
             query = query.order_by(order_by)
-
-
 
     # get entries as pandas table
     df = pd.read_sql(query.statement, session.bind, index_col="id")
