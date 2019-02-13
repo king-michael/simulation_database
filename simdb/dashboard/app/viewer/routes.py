@@ -7,7 +7,7 @@ import pandas as pd
 
 @blueprint.route('/')
 def viewer_index():
-    return render_template('index_viewer.html')
+    return render_template('viewer_index.html')
 
 
 @blueprint.route('/build_filter')
@@ -124,11 +124,11 @@ def filter_table():
     pd.set_option('display.max_colwidth', -1) # let pandas print the full entry to HTML table
 
     # Order is important ! dont switch table["path"] and table["entry_id"]
-    link_template = '<a href="details/{db_id}/{entry_id}/">{link_name}</a>'
+    link_template = '<a href="details?entry_id={entry_id}">{link_name}</a>'
     table["path"] = table.apply(
-       lambda row: link_template.format(entry_id=str(row.entry_id), db_id=db_id, link_name=row.path), axis=1)
+       lambda row: link_template.format(entry_id=str(row.entry_id), link_name=row.path), axis=1)
     table["entry_id"] = table["entry_id"].apply(
-        lambda entry_id: link_template.format(entry_id=entry_id, db_id=db_id, link_name=entry_id))
+       lambda entry_id: link_template.format(entry_id=entry_id, link_name=entry_id))
     #table["path"] = table["path"].apply(lambda x: '<a href="{0}" target="blank">{0}</a>'.format(x), )
     # convert dates
     table["updated_on"] = table["updated_on"].apply(lambda x: x.strftime('%Y/%m/%d'))
@@ -136,3 +136,25 @@ def filter_table():
     table["created_on"] = table["created_on"].apply(lambda x: x.strftime('%Y/%m/%d') if x is not None else "--")
 
     return table.to_html(table_id="datatable-responsive", classes=str("table"), escape=False, index=False, border=0) # convert to HTML
+
+@blueprint.route('/details/')
+def viewer_details():
+
+    # get the path to selected DB
+    db_path = current_app.config['SELECTED_DATABASE']['path']
+    entry_id = request.args.get('entry_id')
+    session = api.connect_database(db_path=db_path)
+
+    sim = api.get_entry_details(session=session, entry_id=entry_id)
+    meta = api.get_meta_groups(session, entry_id, as_list=True)
+    keywords = api.get_keywords(session=session, entry_id=entry_id)
+
+    session.close()
+
+    # render template
+    return render_template(
+        'viewer_details.html',
+        sim=sim,
+        meta=meta,
+        keywords=keywords,
+    )
