@@ -100,10 +100,6 @@ def filter_table():
     else:
         apply_filter = None
 
-    print selected_groups
-    print selected_keywords
-    print selected_keyword_values
-
     # load table
     session = api.connect_database(db_path = db_path)
     table = api.get_entry_table(session,
