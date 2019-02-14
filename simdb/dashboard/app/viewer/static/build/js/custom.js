@@ -153,16 +153,19 @@ function filterTable(){
                 buttons: [
                     {
                         extend: 'csv',
-                        text: "<i class='fas fa-file-csv' aria-hidden='true'></i>"
+                        text: "<i class='fas fa-file-csv' aria-hidden='true'></i>",
+                        titleAttr: 'Export CSV'
                     },
                     {
                         extend: 'print',
-                        text: "<i class='fa fa-print' aria-hidden='true'></i>"
+                        text: "<i class='fa fa-print' aria-hidden='true'></i>",
+                        titleAttr: 'Print'
                     },
                     {
                         extend: 'colvis',
                         columns: ':gt(0)',
-                        text: "<i class='fa fa-bars fa-rotate-90' aria-hidden='true'></i>"
+                        text: "<i class='fa fa-bars fa-rotate-90' aria-hidden='true'></i>",
+                        titleAttr: 'Show Columns'
                     }
                 ]
             } );
