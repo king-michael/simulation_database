@@ -1,14 +1,14 @@
 """
 Test the fileFinder
 """
-
+from __future__ import print_function, absolute_import
 import logging
 logger = logging.getLogger('SetupDatabase:create_database:create_database')
 
 import sys
 import os
 
-from fileHandler import FileHandler
+from .fileHandler import FileHandler
 
 sys.path.append("../../..")
 sys.path.append("../../../..")
@@ -44,13 +44,13 @@ for fname in find_files(**kwargs_fileFinder):
     try:
         SIM_IDS.append(data['ID']) # throws an ERROR if ID not in data
     except:
-        print "ERROR: ID:\n ", fname # shows the FILE if an error is thrown
+        print("ERROR: ID:\n ", fname) # shows the FILE if an error is thrown
         ERRORS = True
 
     try:
         data['MEDIAWIKI']  # throws an ERROR if MEDIAWIKI not in data
     except:
-        print "WARNING: NO MEDIAWIKI ENTRY:\n ", fname
+        print("WARNING: NO MEDIAWIKI ENTRY:\n ", fname)
         WARNINGS = True
 
     DATAS.append(data)  # only append if the first two cases are passed
@@ -66,13 +66,13 @@ logger.info('CHECK FOR DUPLICATES IN sim_id')
 from collections import Counter
 sim_count=Counter(SIM_IDS)
 DUPLICATES=False
-for k,v in sim_count.iteritems():
+for k,v in sim_count.items():
     if v != 1:
         DUPLICATES=True
-        print "#======================================================#"
+        print("#======================================================#")
         for sim, path in zip(SIM_IDS,PATHS):
             if k == sim:
-                print sim,path
+                print(sim,path)
 if DUPLICATES:
     exit()
 

@@ -2,6 +2,7 @@
 Whole workflow:
  add_keywords_from_folder
 """
+from __future__ import print_function, absolute_import, division
 
 import os
 import logging
@@ -12,7 +13,7 @@ logger = logging.getLogger('SetupDatabase:add_metadata')
 
 logger.info('Add keywords')
 logger.info('store in database : {}'.format(db_final))
-from add_metadata_from_logfiles import *
+from .add_metadata_from_logfiles import *
 
 copy2(db,db_final)
 os.remove(db)
