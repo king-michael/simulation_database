@@ -187,7 +187,10 @@ def get_all_keywords(session, groups=None, count=False):
     else:
         out = keywords
 
-    return out
+    if len(out) == 0:
+        return None
+    else:
+        return out
 
 
 def get_all_keyword_values(session, keyword_name, groups=None, count=False):
@@ -262,7 +265,10 @@ def get_all_groups(session, count=False):
     groups = [g[0] for g in groups]
     if count:
         group_counts = [session.query(Main.entry_id).filter(Main.groups.any(name=g)).count() for g in groups]
-        return zip(groups, group_counts)
+        groups = zip(groups, group_counts)
+
+    if len(groups) == 0:
+        return None
     else:
         return groups
 
@@ -308,7 +314,7 @@ def get_entry_table(session,
     """
 
     # open database
-    query = session.query(Main.id, *[getattr(Main, attr) for attr in columns]).join(Main.keywords)
+    query = session.query(Main.id, *[getattr(Main, attr) for attr in columns])
 
     # filter by groups
     if isinstance(group_names, Iterable):

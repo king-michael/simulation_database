@@ -42,12 +42,13 @@ def build_filter():
     session = api.connect_database(db_path=db_path)
 
     # get groups for display
-    groups, counts = zip(*api.get_all_groups(session, count=True))
+    grp = api.get_all_groups(session, count=True)
+    groups, counts = zip(*grp) if grp else [[],[]]
     out['groups'], out['group_counts'] = [str(g) for g in groups], list(counts)
 
     # get keywords to display
     all_keywords = api.get_all_keywords(session, groups=selected_groups, count=True)
-    out['keywords'], out['keyword_counts'] = zip(*all_keywords)
+    out['keywords'], out['keyword_counts'] = zip(*all_keywords) if all_keywords else [[],[]]
 
     if selected_keywords:
         if len(selected_keywords) == 1 and selected_keywords != [""]:
@@ -95,7 +96,7 @@ def filter_table():
         selected_keyword_values = selected_keyword_values.split(",")
 
     if selected_keyword_values:
-        apply_filter = or_(*[and_(Keywords.name == selected_keywords[0], Keywords.value == value) for value in selected_keyword_values])
+        apply_filter = or_(*[Main.keywords.any(name=selected_keywords[0], value=value) for value in selected_keyword_values])
         selected_keywords = None
     else:
         apply_filter = None
