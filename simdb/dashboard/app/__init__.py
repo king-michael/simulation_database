@@ -18,7 +18,7 @@ def register_extensions(app):
 def register_blueprints(app):
     # import blueprints
     # each blueprint is a folder
-    for module_name in ['base', 'viewer', 'statistics', "preferences"]:
+    for module_name in ['base', 'viewer', "manage_groups", 'statistics', "preferences"]:
         module = import_module('app.{}.routes'.format(module_name))
         app.register_blueprint(module.blueprint)
 

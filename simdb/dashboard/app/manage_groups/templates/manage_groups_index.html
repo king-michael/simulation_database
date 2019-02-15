@@ -1,0 +1,38 @@
+{% extends "base_site.html" %}
+
+{% block title %} Manage Groups {% endblock title %}
+
+{% block stylesheets %}
+  {{ super() }}
+    <!--custom style sheet for preferences-->
+    {#}<link href="{{ url_for('manage_groups_blueprint.static', filename='build/css/custom.css') }}" rel="stylesheet">{#}
+{% endblock stylesheets %}
+
+{% block content %}
+  <div class="right_col" role="main">
+
+    <!--FIRST ROW-->
+    <div class="row">
+
+      {% if groups %}
+        {%- for group, count in groups %}
+        <div class="col-md-4 col-sm-12 col-xs-12">
+            {% include 'panels/group.html' %}
+        </div>
+        {%- endfor %}
+      {% else %}
+        No Groups found
+      {% endif %}
+
+    </div>
+    <!--FIRST ROW-->
+
+
+  </div>
+{% endblock content %}
+
+{% block javascripts %}
+  {{ super()}}
+    <!--custom scripts for preferences-->
+    {#}<script src="{{ url_for('manage_groups_blueprint.static', filename='build/js/custom.js') }}"></script>{#}
+{% endblock javascripts %}
