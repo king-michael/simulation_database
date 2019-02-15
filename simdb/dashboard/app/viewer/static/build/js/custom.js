@@ -147,9 +147,24 @@ function filterTable(){
         dataType: "html",
         success: function(data){
             $('#database_entries .x_content').html(data);  // push resulting table to something with id=results
+
             $('#database_entries table').dataTable( {
-                dom: 'fBrtip',
-                "paging": false,
+
+                // bootstrap 4 style
+                dom: "<'row'<'col-sm-12 col-md-4'f><'col-sm-12 col-md-4'l><'col-sm-12 col-md-4'B>>" +
+                     "<'row'<'col-sm-12 col-md-12'p>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row'<'col-sm-12 col-md-5'i>>",
+
+                // disable visibility of dates by default
+                'columnDefs': [
+                   { targets: [2, 3, 4], visible: false }
+                ],
+
+                "language": {
+                    "search": "<i class='fas fa-search'></i>"
+                },
+
                 buttons: [
                     {
                         extend: 'csv',
@@ -168,7 +183,9 @@ function filterTable(){
                         titleAttr: 'Show Columns'
                     }
                 ]
-            } );
+
+            });
+
         }
 
     });

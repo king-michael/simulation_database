@@ -131,7 +131,7 @@ def filter_table():
     table["added_on"] = table["added_on"].apply(lambda x: x.strftime('%Y/%m/%d'))
     table["created_on"] = table["created_on"].apply(lambda x: x.strftime('%Y/%m/%d') if x is not None else "--")
 
-    return table.to_html(table_id="datatable-responsive", classes=str("table"), escape=False, index=False, border=0) # convert to HTML
+    return table.to_html(classes=str("table"), escape=False, index=False, border=0) # convert to HTML
 
 @blueprint.route('/details/')
 def viewer_details():
