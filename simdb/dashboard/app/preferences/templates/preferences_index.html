@@ -55,13 +55,13 @@
                         <td class="db_table_comment">{{ db.comment }}</td>
                         <td class="db_table_toolbox">
                             <ul class='nav navbar-right panel_toolbox'>
-                                <li><a class='select-link'><i class="fa fa-circle"></i></a></li>
+                                <li><a class='select-link' data-toggle="tooltip" title="Select"><i class="fa fa-circle"></i></a></li>
                                 {% if db.id == config.SELECTED_DATABASE.id %}
                                     <li><a class='edit-link disabled'><i class='fa fa-edit'></i></a></li>
-                                    <li><a class='delete-link disabled'><i class='fa fa-times'></i></a></li>
+                                    <li><a class='delete-link disabled'><i class='fa fa-trash'></i></a></li>
                                 {% else %}
-                                    <li><a class='edit-link'><i class='fa fa-edit'></i></a></li>
-                                    <li><a class='delete-link'><i class='fa fa-times'></i></a></li>
+                                    <li><a class='edit-link' data-toggle="tooltip" title="Edit"><i class='fa fa-edit'></i></a></li>
+                                    <li><a class='delete-link' data-toggle="tooltip" title="Delete"><i class='fa fa-trash'></i></a></li>
                                 {% endif %}
                             </ul>
                         </td>

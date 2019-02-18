@@ -66,16 +66,19 @@
 
  $(document).on('click','.edit-link',function() {
 
+     // cancel if disables
      if ( $(this).hasClass('disabled') ) {
          return;
      }
 
     var $TABLE_ROW = $(this).closest('.entry');
 
+    // get current content
     var name = $TABLE_ROW.find('.db_table_name').text();
     var path = $TABLE_ROW.find('.db_table_path').text();
     var comment = $TABLE_ROW.find('.db_table_comment').text();
 
+    // transform table cells to input fields
     $TABLE_ROW.find('.db_table_name').html("<input type='text' required='required' class='form-control db_name_field'>");
     $TABLE_ROW.find('.db_table_name').find('input').val(name);
 
@@ -85,6 +88,7 @@
     $TABLE_ROW.find('.db_table_comment').html("<input type='text' class='form-control db_comment_field'>");
     $TABLE_ROW.find('.db_table_comment').find('input').val(comment);
 
+    // update buttons
     $TABLE_ROW.find('.fa-edit').addClass('fa-check').removeClass('fa-edit');
     $TABLE_ROW.find('.edit-link').addClass('confirm-link').removeClass('edit-link');
 
