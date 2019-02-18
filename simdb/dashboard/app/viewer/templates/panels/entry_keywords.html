@@ -1,0 +1,27 @@
+<div class="x_panel tile">
+
+  <!--panel header-->
+  <div class="x_title">
+    <h2><i class="fas fa-key"></i> Keywords</h2>
+    <!--<ul class="nav navbar-right panel_toolbox">-->
+      <!--<li><input type="checkbox" data-toggle="toggle" data-on="AND" data-off="OR">-->
+      <!--</li>-->
+    <!--</ul>-->
+    <div class="clearfix"></div>
+  </div>
+  <!--panel header-->
+
+  <div class="x_content">
+    <div class="">
+        <table id="database_table" class="table">
+            {%- for keyword_name in keywords %}
+                <tr>
+                    <td>{{ keyword_name }}</td>
+                    <td>{% if keywords[keyword_name] != None %}  {{ keywords[keyword_name] }} {% endif %}</td>
+                </tr>
+            {%- endfor %}
+        </table>
+    </div>
+  </div>
+
+</div>

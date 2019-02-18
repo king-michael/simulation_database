@@ -1,0 +1,117 @@
+{% extends "base_site.html" %}
+
+{% block title %} Preferences {% endblock title %}
+
+{% block stylesheets %}
+  {{ super() }}
+    <!--custom style sheet for preferences-->
+    <link href="{{ url_for('preferences_blueprint.static', filename='build/css/custom.css') }}" rel="stylesheet">
+{% endblock stylesheets %}
+
+{% block content %}
+  <div class="right_col" role="main">
+
+    <!--FIRST ROW-->
+    <div class="row">
+
+      <div class="col-lg-6 col-md-12 col-sm-12 col-xs-12">
+        <div class="x_panel tile min_height_medium">
+
+          <!--panel header-->
+          <div class="x_title">
+            <h2><i class="fas fa-database"></i> Databases</h2>
+
+            <ul class="nav navbar-right panel_toolbox">
+              <li><a class="add-link"><i class="fa fa-plus"></i></a>
+              </li>
+            </ul>
+
+            <div class="clearfix"></div>
+          </div>
+          <!--panel header-->
+
+          <div class="x_content">
+            <table id="database_table" class="table">
+                <thead>
+                    <tr>
+                        <th class="hidden">ID</th>
+                        <th>Name</th>
+                        <th>Path</th>
+                        <th>Comment</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {%- for db in databases %}
+
+                    {% if db.id == config.SELECTED_DATABASE.id %}
+                        <tr class="entry selected-db">
+                    {% else %}
+                        <tr class="entry">
+                    {% endif %}
+                        <td class="db_table_id hidden">{{ db.id }}</td>
+                        <td class="db_table_name">{{ db.name }}</td>
+                        <td class="db_table_path">{{ db.path }}</td>
+                        <td class="db_table_comment">{{ db.comment }}</td>
+                        <td class="db_table_toolbox">
+                            <ul class='nav navbar-right panel_toolbox'>
+                                <li><a class='select-link' data-toggle="tooltip" title="Select"><i class="fa fa-circle"></i></a></li>
+                                {% if db.id == config.SELECTED_DATABASE.id %}
+                                    <li><a class='edit-link disabled'><i class='fa fa-edit'></i></a></li>
+                                    <li><a class='delete-link disabled'><i class='fa fa-trash'></i></a></li>
+                                {% else %}
+                                    <li><a class='edit-link' data-toggle="tooltip" title="Edit"><i class='fa fa-edit'></i></a></li>
+                                    <li><a class='delete-link' data-toggle="tooltip" title="Delete"><i class='fa fa-trash'></i></a></li>
+                                {% endif %}
+                            </ul>
+                        </td>
+                    </tr>
+                {%- endfor %}
+                </tbody>
+            </table>
+
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+    <!--FIRST ROW-->
+
+    <!--SECOND ROW-->
+    <div class="row">
+
+      <div class="col-lg-6 col-md-12 col-sm-12 col-xs-12">
+        <div class="x_panel tile fixed_height_320">
+
+          <!--panel header-->
+          <div class="x_title">
+            <h2>More Options</h2>
+
+            <ul class="nav navbar-right panel_toolbox">
+
+            </ul>
+
+            <div class="clearfix"></div>
+          </div>
+          <!--panel header-->
+
+          <div class="x_content">
+            Coming soon...
+
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+    <!--FIRST ROW-->
+
+  </div>
+{% endblock content %}
+
+{% block javascripts %}
+  {{ super()}}
+    <!--custom scripts for preferences-->
+    <script src="{{ url_for('preferences_blueprint.static', filename='build/js/custom.js') }}"></script>
+{% endblock javascripts %}

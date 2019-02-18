@@ -1,0 +1,64 @@
+<div class="x_panel tile">
+
+  <!--panel header-->
+  <div class="x_title">
+    <h2><i class="fas fa-info-circle"></i> Entry Details</h2>
+    <!--<ul class="nav navbar-right panel_toolbox">-->
+      <!--<li><input type="checkbox" data-toggle="toggle" data-on="AND" data-off="OR">-->
+      <!--</li>-->
+    <!--</ul>-->
+    <div class="clearfix"></div>
+  </div>
+  <!--panel header-->
+
+  <div class="x_content">
+    <div class="">
+        <table id="database_table" class="table">
+            <!--<thead>-->
+                <!--<tr>-->
+                    <!---->
+                <!--</tr>-->
+            <!--</thead>-->
+            <tbody>
+            <tr>
+                <td>Entry ID</td>
+                <td>{{ sim["entry_id"] }}</td>
+            </tr>
+            <tr>
+                <td>Owner</td>
+                <td>{{ sim["owner"] }}</td>
+            </tr>
+            <tr>
+                <td>Url</td>
+                <td>{{ sim["url"] }}</td>
+            </tr>
+            <tr>
+                <td>Path</td>
+                <td>{{ sim["path"] }}</td>
+            </tr>
+            <tr>
+                <td>Type</td>
+                <td>{{ sim["type"] }}</td>
+            </tr>
+            <tr>
+                <td>Description</td>
+                <td>{{ sim["description"] }}</td>
+            </tr>
+            <tr>
+                <td>Created</td>
+                <td>{% if sim["created_on"] != None %}  {{ sim["created_on"].strftime("%d.%m.%Y") }} {% endif %}</td>
+            </tr>
+            <tr>
+                <td>Added</td>
+                <td>{% if sim["added_on"] != None %}  {{ sim["added_on"].strftime("%d.%m.%Y") }} {% endif %}</td>
+            </tr>
+            <tr>
+                <td>Last update</td>
+                <td>{% if sim["updated_on"] != None %}  {{ sim["updated_on"].strftime("%d.%m.%Y") }} {% endif %}</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+  </div>
+
+</div>

@@ -1,15 +1,17 @@
 #!/usr/bin/env python
+from __future__ import print_function, absolute_import, division
 
 from shutil import copy2
 
 import sys
 import logging
+
 sys.path.append("../../..")
 sys.path.append("../../../..")
 
 from simdb.databaseModel import *
 import simdb.databaseAPI as api
-from map_folder_structure import generate_keywords
+from .map_folder_structure import generate_keywords
 
 
 logger = logging.getLogger('SetupDatabase:add_keywords:add_keywords_from_path')

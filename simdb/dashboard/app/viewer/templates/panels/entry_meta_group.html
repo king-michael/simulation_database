@@ -1,0 +1,27 @@
+<div class="x_panel tile">
+
+  <!--panel header-->
+  <div class="x_title">
+    <h2><i class="fas fa-tachometer-alt"></i> {{ meta_group_name.replace("_", " ").capitalize() }}</h2>
+    <!--<ul class="nav navbar-right panel_toolbox">-->
+      <!--<li><input type="checkbox" data-toggle="toggle" data-on="AND" data-off="OR">-->
+      <!--</li>-->
+    <!--</ul>-->
+    <div class="clearfix"></div>
+  </div>
+  <!--panel header-->
+
+  <div class="x_content">
+    <div class="">
+      <table id="{{ meta_group_name }}-table" class="table">
+          {% for meta_entry_name, meta_entry_value in meta_group %}
+          <tr>
+              <td>{{ meta_entry_name }}</td>
+              <td>{{ meta_entry_value }}</td>
+          </tr>
+          {% endfor %}
+      </table>
+    </div>
+  </div>
+
+</div>
