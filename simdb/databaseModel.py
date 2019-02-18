@@ -128,7 +128,7 @@ class AssociationMainMain(Base):
    __tablename__ = 'association_main_main'
    parent_id = Column(Integer, ForeignKey('main.id'), primary_key=True)
    child_id = Column(Integer, ForeignKey('main.id'), primary_key=True)
-   extra_data = Column(String(50))
+   relation = Column(String(50))
    parent = relationship("Main",
                          foreign_keys='AssociationMainMain.parent_id',
                          back_populates="children"
@@ -256,6 +256,15 @@ class MetaEntry(Base):
             metagroup_id=self.metagroup_id,
             name=self.name,
             value=self.value)
+
+class DataBaseMeta(Base):
+    __tablename__ = 'databasemeta'
+
+    id = Column(Integer(), primary_key=True, index=True)
+    name = Column(String(255), unique=True)
+    value = Column(String(255))
+    priority = Column(Integer(), default=0)
+
 
 def setup_database(engine):
     """function to create the database"""
