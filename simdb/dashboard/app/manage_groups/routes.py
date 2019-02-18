@@ -13,7 +13,12 @@ def manage_groups_index():
     # get groups for display
     groups = api.get_all_groups(session, count=True)
 
+    group_keywords = {g : api.get_group_keywords(session, g) for g, c in groups}
+
+    session.close()
+
     return render_template(
         'manage_groups_index.html',
-        groups = groups
+        groups = groups,
+        group_keywords = group_keywords
     )

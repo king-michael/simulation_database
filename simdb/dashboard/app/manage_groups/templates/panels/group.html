@@ -13,7 +13,14 @@
 
   <div class="x_content">
     <div class="">
-        bla
+        <table class="table">
+            {%- for name, value in group_keywords[group] %}
+                <tr>
+                    <td>{{ name }}</td>
+                    <td>{% if value != None %}  {{ value }} {% endif %}</td>
+                </tr>
+            {%- endfor %}
+        </table>
     </div>
   </div>
 

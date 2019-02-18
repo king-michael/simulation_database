@@ -884,6 +884,11 @@ def remove_meta_data(session, entry_id, meta_group_name, **kwargs):
         session.delete(meta_data)
 
 
+
+# =========================================================================== #
+# manage groups
+# =========================================================================== #
+
 def add_to_group(session, entry_id, group_name):
     """Add simulation to group.
 
@@ -941,6 +946,29 @@ def remove_from_group(session, entry_id, group_name):
     if group:
         if entry in group.entries:
             group.entries.remove(entry)
+
+
+def get_group_keywords(session, group_name):
+    """
+    Function to get the `Keywords` for a group.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    group_name : str
+        group name in the database
+
+    Returns
+    -------
+    group_keywords : dict
+        Keywords for the group
+    """
+    group = session.query(Groups).filter_by(name=group_name).one() or None
+
+    group_keywords = [(k.name, k.value) for k in group.keywords]
+
+    return group_keywords
 
 
 
