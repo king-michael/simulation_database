@@ -21,3 +21,22 @@
     font-size: 200%;
     padding-top: 50px;
 }
+
+.dataTables_filter {
+    float: left;
+    text-align: left !important;
+    width: 100%;
+}
+
+.dataTables_filter label {
+    width: 100%;
+}
+
+.dataTables_filter input {
+    width: 98% !important;
+}
+
+.dataTables_length {
+    width: 180px;
+    float: right;
+}

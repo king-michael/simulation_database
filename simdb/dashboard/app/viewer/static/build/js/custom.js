@@ -151,8 +151,8 @@ function filterTable(){
             $('#database_entries table').dataTable( {
 
                 // bootstrap 4 style
-                dom: "<'row'<'col-sm-12 col-md-4'f><'col-sm-12 col-md-4'l><'col-sm-12 col-md-4'B>>" +
-                     "<'row'<'col-sm-12 col-md-12'p>>" +
+                dom: "<'row'<'col-sm-12 col-md-6'f><'col-sm-12 col-md-6'B>>" +
+                     "<'row'<'col-sm-12 col-md-12'pl>>" +
                      "<'row'<'col-sm-12'tr>>" +
                      "<'row'<'col-sm-12 col-md-5'i>>",
 
