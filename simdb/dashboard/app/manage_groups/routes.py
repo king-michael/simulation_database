@@ -13,7 +13,7 @@ def manage_groups_index():
     # get groups for display
     groups = api.get_all_groups(session, count=True)
 
-    group_keywords = {g : api.get_group_keywords(session, g) for g, c in groups}
+    group_keywords = {g : api.get_group_keywords(session, g) for g, c in groups} if groups else None
 
     session.close()
 
