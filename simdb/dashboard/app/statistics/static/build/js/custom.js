@@ -102,9 +102,78 @@ function init_chart_entry_owner(){
 
 };
 
+
+function init_chart_activity(){
+
+    if( typeof (echarts) === 'undefined'){ return; }
+
+    // init echart
+    var echartPie = echarts.init(document.getElementById('echart_activity'));
+
+    // get data via post method
+    // URL must have a leading and trailing slash
+    $.post('/statistics/activity/'
+    ).done(function(response) {
+
+        // specify chart configuration item and data
+        var option = {
+            tooltip: {
+                position: 'top',
+                formatter: function (p) {
+                    return p.name + ': ' + p.data[2];
+                }
+            },
+            animation: false,
+            // grid: {
+            //     height: '50%',
+            //     y: '10%'
+            // },
+            xAxis: {
+                show: false,
+                type: 'category',
+                data: response["dates"]
+            },
+            yAxis: {
+                type: 'category',
+                data: ["Last update", "Added", "Created"]
+            },
+            visualMap: {
+                show: false,
+                min: 0,
+                max: 20,
+                inRange : {
+                    color: ['#FFFFFF', '#196127' ]
+                }
+            },
+            series: [{
+                name: 'Entries',
+                type: 'heatmap',
+                data: response["heatmap"],
+                itemStyle: {
+                    emphasis: {
+                        shadowBlur: 10,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                }
+            }]
+        };
+
+        // use configuration item and data specified to show chart
+        echartPie.setOption(option);
+
+
+    }).fail(function() {
+        window.alert("fail");
+    });
+
+
+};
+
+
 $(document).ready(function() {
 
     init_chart_entry_types();
     init_chart_entry_owner();
+    init_chart_activity();
 
 });

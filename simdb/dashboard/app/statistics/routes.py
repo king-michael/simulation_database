@@ -3,7 +3,7 @@ from flask import render_template, current_app, jsonify
 import simdb.databaseAPI as api
 from simdb.databaseModel import *
 from sqlalchemy import func
-
+import datetime
 
 @blueprint.route('/')
 def statistics_index():
@@ -74,3 +74,36 @@ def statistics_entry_owner():
 
     # return data as json object
     return jsonify({"data" : data})
+
+
+@blueprint.route('/activity/', methods=['POST'])
+def statistics_activity():
+
+    # open database
+    db_path = current_app.config['SELECTED_DATABASE']['path']
+    session = api.connect_database(db_path=db_path)
+
+    # count entries by day
+    date = func.strftime("%Y-%m-%d", Main.created_on).label('date')
+    created = dict(session.query(date, func.count(date)).group_by('date').all())
+
+    date = func.strftime("%Y-%m-%d", Main.added_on).label('date')
+    added = dict(session.query(date, func.count(date)).group_by('date').all())
+
+    date = func.strftime("%Y-%m-%d", Main.updated_on).label('date')
+    updated = dict(session.query(date, func.count(date)).group_by('date').all())
+
+    # convert data
+    dates = list(set(created.keys() + added.keys() + updated.keys()))
+    dates.sort()
+    # dates = ["/".join(d.split("-")[::-1]) for d in dates]
+    print(dates)
+
+    heatmap = [[i, 2, created[d]] if created.get(d) else [i, 2, 0] for i, d in enumerate(dates)] \
+              + [[i, 1, added[d]] if added.get(d) else [i, 1, 0] for i, d in enumerate(dates)] \
+              + [[i, 0, updated[d]] if updated.get(d) else [i, 0, 0] for i, d in enumerate(dates)]
+
+
+    session.close()
+
+    return jsonify({"dates" : dates, "heatmap" : heatmap})
