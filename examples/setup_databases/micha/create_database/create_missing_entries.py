@@ -1,6 +1,8 @@
+# coding=utf-8
 """
 Create missing empty entries for database
 """
+from __future__ import print_function
 db_raw = 'tmp_database_raw.db'
 db     = 'tmp_database_add_missing.db'
 
@@ -39,7 +41,11 @@ SIM_ID_MAIN = sorted(list(set([sim_id[0][:6] for sim_id in rv])))
 SIM_ID_PARENTS = [sim_id[0] for sim_id in rv if len(sim_id[0]) ==6]
 LAST_ID_MAIN=SIM_ID_MAIN[-1]
 
-LAST_int=int(LAST_ID_MAIN[2:])
+try:
+    LAST_int=int(LAST_ID_MAIN[2:])
+except:
+    print(LAST_ID_MAIN)
+    raise
 SIM_ID_MAIN_ALL=["MK{:04d}".format(i) for i in range(1,LAST_int+1)]
 
 logger.warn('add missing entries')

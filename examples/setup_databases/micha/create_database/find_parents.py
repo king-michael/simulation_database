@@ -61,7 +61,7 @@ for sim_id in SIM_IDS:
         if not ret: # if the releationship is not there yet
             sim_parent.children.append(AssociationMainMain(parent=sim_parent,
                                                            child=sim_child,
-                                                           extra_data='SUB'))
+                                                           relation='subsimulation'))
             logger.debug('ADDED: parent: %s child: %s',
                         sim_parent.entry_id,
                         sim_child.entry_id)
@@ -89,7 +89,7 @@ for sim_id in SIM_IDS:
         if not ret:  # if the releationship is not there yet
             sim_parent.children.append(AssociationMainMain(parent=sim_parent,
                                                            child=sim_child,
-                                                           extra_data='SUBSUB'))
+                                                           relation='subsimulation'))
             logger.debug('ADDED: parent: %s child: %s',
                         sim_parent.entry_id,
                         sim_child.entry_id)
@@ -104,7 +104,7 @@ for sim_id in SIM_IDS:
         if not ret: # if grandchild relation is not here
             sim_grandparent.children.append(AssociationMainMain(parent=sim_grandparent,
                                                                 child=sim_parent,
-                                                                extra_data='SUB'))
+                                                                relation='subsimulation'))
             logger.debug('ADDED: parent: %s child: %s',
                         sim_grandparent.entry_id,
                         sim_parent.entry_id)

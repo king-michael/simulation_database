@@ -42,6 +42,8 @@ for fname in find_files(**kwargs_fileFinder):
     data['path']=os.path.dirname(fname)
 
     try:
+        if data['ID'] == 'XXX_ID':
+            continue
         SIM_IDS.append(data['ID']) # throws an ERROR if ID not in data
     except:
         print("ERROR: ID:\n ", fname) # shows the FILE if an error is thrown

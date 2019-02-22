@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding=utf-8
 """
 Script to setup the database.
 
@@ -38,7 +39,6 @@ list_databases = []
 if create_database:
     from create_database import __main__
     db_raw = __main__.db_final
-
 else:
     db_raw = 'micha_raw.db'
 list_databases.append(db_raw)
@@ -49,7 +49,6 @@ list_databases.append(db_raw)
 if add_keywords:
     from add_keywords import __main__
     db_raw = __main__.db_final
-
 else:
     db_raw = 'micha_added_keywords.db'
 list_databases.append(db_raw)
