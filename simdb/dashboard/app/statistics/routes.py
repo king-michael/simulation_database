@@ -94,7 +94,7 @@ def statistics_activity():
     updated = dict(session.query(date, func.count(date)).group_by('date').all())
 
     # convert data
-    dates = list(set(created.keys() + added.keys() + updated.keys()))
+    dates = list(set([*created.keys(), *added.keys(), *updated.keys()]))
     dates.sort()
     # dates = ["/".join(d.split("-")[::-1]) for d in dates]
     print(dates)
