@@ -246,28 +246,31 @@ def map_lammps_to_database(keywords):
     master_dict = dict()
     rv = dict()
 
+    dict_units = {
+        'metal' : {
+            'conv_time': 1,
+            'conv_press': 1,
+        },
+        'real': {
+            'conv_time': 0.001,
+            'conv_press': 1.01325,
+        },
+        'lj': {
+            'conv_time': 0.005,
+            'conv_press': 1,
+        },
+        'UNKNOWN' : {
+            'conv_time': 1,
+            'conv_press': 1,
+        }
+    }
     # handling units
-    if 'units' in keywords.keys():
-        if keywords['units'] == 'metal':
-            conv_time = 1
-            conv_press = 1
-        elif keywords['units'] == 'real':
-            conv_time = 0.001
-            conv_press = 1.01325
-    else:
-        keywords['units'] = 'lj'
-        conv_time = 0.005
-        conv_press = 1
-
+    conv_time = dict_units.get(keywords.get('units', 'lj'), 'UNKNOWN')['conv_time']
+    conv_press = dict_units.get(keywords.get('units', 'lj'), 'UNKNOWN')['conv_press']
     rv['units'] = keywords['units']
 
     # handling timestep
-    if 'time_step' in keywords.keys():
-        # get the conversion factor for time
-        dt = float(keywords['time_step'])*conv_time
-        rv['time_step'] = dt
-    else:
-        dt = conv_time
+    rv['time_step'] = float(keywords.get('time_step', 1))*conv_time
 
     # mapping general stuff
     if 'n_steps' in keywords.keys():
