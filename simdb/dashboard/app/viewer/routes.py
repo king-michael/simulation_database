@@ -43,7 +43,7 @@ def build_filter():
 
     # get groups for display
     grp = api.get_all_groups(session, count=True)
-    groups, counts = zip(*grp) if grp else [[],[]]
+    groups, counts = zip(*grp) if grp is not None else [[],[]]
     out['groups'], out['group_counts'] = [str(g) for g in groups], list(counts)
 
     # get keywords to display
