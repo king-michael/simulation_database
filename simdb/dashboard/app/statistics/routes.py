@@ -3,6 +3,8 @@ from flask import render_template, current_app, jsonify
 import simdb.databaseAPI as api
 from simdb.databaseModel import *
 from sqlalchemy import func
+from operator import is_not
+from functools import partial
 import datetime
 
 @blueprint.route('/')
@@ -94,10 +96,16 @@ def statistics_activity():
     updated = dict(session.query(date, func.count(date)).group_by('date').all())
 
     # convert data
-    dates = list(set([*created.keys(), *added.keys(), *updated.keys()]))
+    dates = list(set(
+          list(created.keys())
+        + list(added.keys())
+        + list(updated.keys())
+                     ))
+    dates = list(filter(partial(is_not, None), dates)) # fix None dates
+
     dates.sort()
     # dates = ["/".join(d.split("-")[::-1]) for d in dates]
-    print(dates)
+    # print(dates)
 
     heatmap = [[i, 2, created[d]] if created.get(d) else [i, 2, 0] for i, d in enumerate(dates)] \
               + [[i, 1, added[d]] if added.get(d) else [i, 1, 0] for i, d in enumerate(dates)] \
