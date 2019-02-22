@@ -1,3 +1,4 @@
+# coding=utf-8
 """
 Test the fileFinder
 """
@@ -8,7 +9,7 @@ logger = logging.getLogger('SetupDatabase:create_database:create_database')
 import sys
 import os
 
-from .fileHandler import FileHandler
+from .fileHandler import get_data_from_info_file
 
 sys.path.append("../../..")
 sys.path.append("../../../..")
@@ -29,7 +30,6 @@ else:
   OWNER = ""
 logger.info('set OWNER = %s', OWNER)
 
-fileHandler = FileHandler()
 SIM_IDS=[]
 PATHS=[]
 DATAS=[]
@@ -38,7 +38,7 @@ logger.info('FIND FILES')
 ERRORS=False
 WARNINGS=False
 for fname in find_files(**kwargs_fileFinder):
-    data = fileHandler.get_data_from_file(fname)
+    data = get_data_from_info_file(fname)
     data['path']=os.path.dirname(fname)
 
     try:
@@ -93,7 +93,7 @@ for data in DATAS:
     sim = Main(
        entry_id = data['ID'],
        url = data['MEDIAWIKI'],
-       type=guess_folder_type(data['path'], cases=['LAMMPS', 'GROMACS'], dir_ignore=['analysis']),
+       type=data.get('TYPE', guess_folder_type(data['path'], cases=['LAMMPS', 'GROMACS'], dir_ignore=['analysis']) ),
        owner = OWNER,
        path = data['path'],
        description = data['INFO'] if 'INFO' in data.keys() else ""

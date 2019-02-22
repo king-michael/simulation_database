@@ -12,23 +12,23 @@ from simdb.databaseModel import *
 logger = logging.getLogger('routine:create_database')
 
 
-def get_data_from_info_file(fname, list_comments=('#')):
+def get_data_from_info_file(fname, list_comments=('#',)):
     """
     Function to get data from a `_info_` file.
 
-    Splits after the first occurence of `:`.
+    In general every file with a logic `KEY : VALUE`
 
     Parameters
     ----------
     fname : str
         File name.
-    list_comments : List[str] or Tuple[str]
+    list_comments : List[str] or Tuple[str], optional
         List of comment characters.
 
     Returns
     -------
     data : dict
-        dict of file context
+        Dictionary of all `(key, value)` pairs found in the given file
     """
 
     # Create a dict to store data in
