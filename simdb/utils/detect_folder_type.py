@@ -1,3 +1,4 @@
+# coding=utf-8
 """
 Module to detect the folder type.
 """
@@ -104,7 +105,7 @@ def _get_rating_for_regex_dict(fname, regex_dictionary):
     best_rating : int or None
         Returns the found raiting. None if no matching regex pattern was found.
     """
-    best_rating = None
+    best_rating = 0
     for reg, rating in regex_dictionary.items():
         if re.match(str(reg), fname) and rating > best_rating:
             best_rating = rating
@@ -133,10 +134,10 @@ def _compare_with_dict_cases(fname, dict_cases, ignore_warning=False):
         Best found case in dict_cases.
     """
 
-    best_rating, cases = None, []
+    best_rating, cases = 0, []
     for key, regex_dict in dict_cases.items():
         rating = _get_rating_for_regex_dict(fname, regex_dict)
-        if rating is None:
+        if rating == 0:
             continue
         elif rating > best_rating:
             best_rating = rating
@@ -173,6 +174,8 @@ def guess_folder_type_from_files(files, dict_cases, ignore_warning=True):
                           key=lambda x: x[1],
                           reverse=True)
     folder_type = file_ratings[0][0]
+    if file_ratings[0][1] <= 0:
+        folder_type = None
     return folder_type
 
 
