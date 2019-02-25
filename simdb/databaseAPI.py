@@ -1022,12 +1022,6 @@ def store_dict(entry_id,
         detail description of the simulation
     created_on : datetime, None, optional
         Datetime object (use `datetime.fromtimestamp(UNIXSTRING)`)
-    n_atoms : int, None, optional
-        total number of atoms in the system
-    n_steps : int, None, optional
-        number of simulation steps
-    time_step : float, None, optional
-        used timestep (in [ps])
     raw_keywords : dict, optional
         Dictionary of `(keyword, value)` that should be added as keywords
     raw_mdp_parameters : dict, optional
@@ -1082,6 +1076,8 @@ def store_dict(entry_id,
                     entries=[MetaEntry(name=k,value=v) for k,v in value.items()],
                           )
             )
+        else:
+            raise UserWarning("Dictionary is needed but got type={} for {}.".format(type(value), value))
     
     # update meta
     if len(metagroups) != 0:
