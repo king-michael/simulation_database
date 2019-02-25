@@ -183,7 +183,7 @@ def get_all_keywords(session, groups=None, count=False):
             keyword_counts = [q.filter(Keywords.name == k).distinct().count() for k in keywords]
 
     if count:
-        out = zip(keywords, keyword_counts)
+        out = list(zip(keywords, keyword_counts))
     else:
         out = keywords
 
@@ -237,7 +237,7 @@ def get_all_keyword_values(session, keyword_name, groups=None, count=False):
                             values]
 
     if count:
-        out = zip(values, value_counts)
+        out = list(zip(values, value_counts))
     else:
         out = values
 
@@ -265,7 +265,7 @@ def get_all_groups(session, count=False):
     groups = [g[0] for g in groups]
     if count:
         group_counts = [session.query(Main.entry_id).filter(Main.groups.any(name=g)).count() for g in groups]
-        groups = zip(groups, group_counts)
+        groups = list(zip(groups, group_counts))
 
     if len(groups) == 0:
         return None
