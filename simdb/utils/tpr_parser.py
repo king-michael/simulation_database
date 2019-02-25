@@ -111,14 +111,14 @@ def map_gromacs_to_database(keywords):
     """
 
     master_dict = dict()
-    rv = dict()
-
-    # mapping general stuff
-    if 'dt' in keywords.keys():
-        rv['time_step'] = float(keywords['dt'])
-        rv['n_steps'] = int(keywords['nsteps'])
-
-    master_dict.update(rv)
+    # rv = dict()
+    #
+    # # mapping general stuff
+    # if 'dt' in keywords.keys():
+    #     rv['time_step'] = float(keywords['dt'])
+    #     rv['n_steps'] = int(keywords['nsteps'])
+    #
+    # master_dict.update(rv)
     
     
     # mapping barostats
@@ -176,6 +176,32 @@ def map_gromacs_to_database(keywords):
             assert len(t_target) == 1, 'Not implemented different groups'
             rv['T_target'] = t_target[0]
     master_dict['thermostat'] = rv
+
+    # mapping simulation setup
+    rv = {
+        "engine" : "GROMACS",
+        "n_steps" : keywords["nsteps"],
+        "time_step" : keywords["dt"],
+        "integrator" : keywords["integrator"]
+    }
+    master_dict['simulation'] = rv
+
+    # mapping non-bonded interaction options
+    rv = {
+        "cutoff_scheme" : keywords["cutoff-scheme"],
+        "cut_off_vdw": keywords["rvdw"],
+        "vdw_type": keywords["vdw-type"],
+        "vdw_modifier": keywords["vdw-modifier"],
+        "coulombtype": keywords["coulombtype"],
+        "cut_off_coulomb" : keywords["rcoulomb"]
+    }
+    if compare_caseinsensitve(keywords["coulombtype"], "pme"):
+        rv["pme_order"] = keywords["pme-order"]
+        rv["fourierspacing"] = keywords["fourierspacing"]
+    elif compare_caseinsensitve(keywords["coulombtype"], "reaction-field"):
+        rv["epsilon_r"] = keywords["epsilon-r"]
+        rv["epsilon_rf"] = keywords["epsilon-rf"]
+    master_dict["non-bonded"] = rv
     
     return master_dict
 
