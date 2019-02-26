@@ -797,7 +797,7 @@ def update_meta_data(session, entry_id, meta_group_name, **kwargs):
         List of added MetaEntries
     """
 
-    meta_entries = session.query(MetaEntry).join(Main).join(MetaGroups) \
+    meta_entries = session.query(MetaEntry).join(MetaGroups).join(Main) \
         .filter(MetaGroups.name == meta_group_name) \
         .filter(Main.entry_id == entry_id) \
         .filter(MetaEntry.name.in_(kwargs.keys())) \
@@ -848,7 +848,7 @@ def set_meta_data(session, entry_id, meta_group_name, **kwargs):
         List of added MetaEntries
     """
 
-    meta_datas = session.query(MetaEntry).join(Main).join(MetaGroups) \
+    meta_datas = session.query(MetaEntry).join(MetaGroups).join(Main) \
         .filter(MetaGroups.name == meta_group_name) \
         .filter(Main.entry_id == entry_id) \
         .all()
@@ -876,7 +876,7 @@ def remove_meta_data(session, entry_id, meta_group_name, **kwargs):
         keyword = "value": Value is given, remove if entry has given value
         keyword = None : Remove meta data entry independent of value
     """
-    meta_datas = session.query(MetaEntry).join(Main).join(MetaGroups) \
+    meta_datas = session.query(MetaEntry).join(MetaGroups).join(Main) \
         .filter(MetaGroups.name == meta_group_name) \
         .filter(Main.entry_id == entry_id) \
         .all()
