@@ -1009,7 +1009,7 @@ def set_group_keywords(session, group_name, **kwargs):
         raise NoResultFound("group_name = '{}' was not found in database.".format(group_name))
 
 
-def update_keywords(session, group_name, **kwargs):
+def update_group_keywords(session, group_name, **kwargs):
     """
     Function to update / add group keywords.
     Will create new group if group is not in database.
