@@ -15,22 +15,25 @@ pip install -e . --user
 ## Run SimDB Viewer
 
 ```
-cd simulation_database/simdb/viewer
+cd simulation_database/simdb/dashboard
 
-python databaseViewer.py
+python run_dashboard.py
 ```
 
 open `127.0.0.0:5000` in browser
 
 ## Development
-Important files:
+### simDB (simdb/):
 
 File | Note 
 --- | --- 
-databaseViewer.py | Main file to start the flask application.
 databaseModel.py | Classes for DB model.
 databaseAPI.py | Functions and classes for interactions with DB.
-app/\_\_init\_\_.py | Flask application is initialised here.
-app/config.py | Configuration file for flask application.
-app/views.py | All pages are added here. Each page renders a template from app/templates.
-app/databaseModelApp.py | Classes for an additional DB which is used to run the application.
+
+### simDB Dashboard (simdb/dashboard/):
+
+File | Note
+--- | ---
+run_dashboard.py | Main file to run dashboard.
+app/base/  | Main blueprint
+app/base/models.py | Classes for an additional DB which is used to run the application.
