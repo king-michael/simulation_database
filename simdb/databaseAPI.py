@@ -972,11 +972,98 @@ def get_group_keywords(session, group_name):
     group_keywords : dict
         Keywords for the group
     """
-    group = session.query(Groups).filter_by(name=group_name).one() or None
+    group = session.query(Groups).filter(Groups.name == group_name).first()
 
-    group_keywords = [(k.name, k.value) for k in group.keywords]
+    if group is not None:
 
-    return group_keywords
+        return [(k.name, k.value) for k in group.keywords]
+
+    else:
+
+        raise NoResultFound("group_name = '{}' was not found in database.".format(group_name))
+
+
+def set_group_keywords(session, group_name, **kwargs):
+    """
+    Function to set group keywords. Overwrites the old!
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    group_name : str
+        group_name in the database
+    kwargs : dict
+        keyword name and value
+    """
+    group = session.query(Groups).filter(Groups.name == group_name).first()
+
+    if group is not None:
+
+        group.keywords_query.delete()
+        for name, value in kwargs.items():
+            group.keywords.append(GroupKeywords(name=name, value=value))
+
+    else:
+
+        raise NoResultFound("group_name = '{}' was not found in database.".format(group_name))
+
+
+def update_keywords(session, group_name, **kwargs):
+    """
+    Function to update / add group keywords.
+    Will create new group if group is not in database.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    group_name : str
+        group name in the database
+    kwargs : dict
+        keyword name and value
+    """
+    # get group
+    group = session.query(Groups).filter(Groups.name == group_name).first()
+
+    if group is not None:
+
+        # update existing group keywords
+        group_keywords = group.keywords_query.filter(GroupKeywords.name.in_(kwargs.keys())).all()
+        for keyword in group_keywords:
+            keyword.value = kwargs.pop(keyword.name)
+
+    else:
+
+        # create new group
+        group = Groups(name=group_name)
+        session.add(group)
+
+    for name, value in kwargs.items():
+        group.keywords.append(GroupKeywords(name=name, value=value))
+
+
+def delete_all_group_keywords(session, group_name):
+    """
+    Function to delete all keywords for a group.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    group_name : str
+        group name in the database
+    """
+    group = session.query(Groups).filter(Groups.name == group_name).first()
+
+    if group is not None:
+
+        group.keywords_query.delete()
+
+    else:
+
+        raise NoResultFound("group_name = '{}' was not found in database.".format(group_name))
+
 
 
 
