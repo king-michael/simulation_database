@@ -797,29 +797,37 @@ def update_meta_data(session, entry_id, meta_group_name, **kwargs):
         List of added MetaEntries
     """
 
-    meta_entries = session.query(MetaEntry).join(MetaGroups).join(Main) \
+    # get id of meta group, None if meta group does not exist
+    metagroup_id = session.query(MetaGroups.id).join(Main) \
         .filter(MetaGroups.name == meta_group_name) \
-        .filter(Main.entry_id == entry_id) \
-        .filter(MetaEntry.name.in_(kwargs.keys())) \
-        .all()
+        .filter(Main.entry_id == entry_id).first()
 
-    for meta_entry in meta_entries:
-        meta_entry.value =  kwargs.pop(meta_entry.name)
+    if metagroup_id is not None:
 
-    if len(meta_entries) != 0:
-        metagroup_id = meta_entries[0].metagroup_id
+        # meta group exists
+        metagroup_id = metagroup_id[0]
+
+        # get all meta entries for selected group and db entry which should be updated
+        meta_entries = session.query(MetaEntry).join(MetaGroups).join(Main) \
+            .filter(MetaGroups.id == metagroup_id)\
+            .filter(MetaEntry.name.in_(kwargs.keys())) \
+            .all()
+
+        # update existing meta entries, remove updated from kwargs
+        for meta_entry in meta_entries:
+            meta_entry.value = kwargs.pop(meta_entry.name)
+
     else:
-        metagroup_id = session.query(MetaGroups.id).join(Main) \
-            .filter(MetaGroups.name == meta_group_name) \
-            .filter(Main.entry_id == entry_id).first()
-        if len(metagroup_id) > 0:
-            metagroup_id = metagroup_id[0]
-        else:
-            main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
-            meta_group = MetaGroups(name=meta_group_name, main_id=main_id)
-            session.add(meta_group)
-            metagroup_id = meta_group.id
 
+        # create new meta group
+        meta_entries = []
+        main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
+        meta_group = MetaGroups(name=meta_group_name, main_id=main_id)
+        session.add(meta_group)
+        session.flush()
+        metagroup_id = meta_group.id
+
+    # add missing meta entries to group
     for name, value in kwargs.items():
         meta_entries.append(MetaEntry(name=name, value=value, metagroup_id=metagroup_id))
     session.add_all(meta_entries)
