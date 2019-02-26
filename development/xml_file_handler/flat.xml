@@ -1,0 +1,29 @@
+<simdb created_on="2019-02-26">
+  <entry_id value="MK0001"/>
+  <path value="/home/test/where/are/you"/>
+  <owner value="me"/>
+  <url value="None"/>
+  <type value="GROMACS"/>
+  <description value="This is more then a test. This is a really really long and stupid line.Do we need a longer line?"/>
+  <created_on value="datetime.now"/>
+  <deleted value="True"/>
+  <archived value="True"/>
+  <keyword name="a" value="1"/>
+  <keyword name="b" value="2"/>
+  <keyword name="c" value="3"/>
+  <metagroup name="barostat">
+    <metaentry name="relax" value="1000"/>
+    <metaentry name="pend" value="2"/>
+    <metaentry name="pstart" value="1"/>
+  </metagroup>
+  <metagroup name="thermostat">
+    <metaentry name="relax" value="100"/>
+    <metaentry name="Tend" value="9000"/>
+    <metaentry name="Tstart" value="300"/>
+  </metagroup>
+  <group id="1" name="Awesome"/>
+  <group id="2" name="shit"/>
+  <child entry_id="MK000101"/>
+  <child entry_id="MK000102" relation="subsimulation"/>
+  <parent entry_id="Overview: 1"/>
+</simdb>
