@@ -976,7 +976,7 @@ def get_group_keywords(session, group_name):
 
     if group is not None:
 
-        return [(k.name, k.value) for k in group.keywords]
+        return dict([(k.name, k.value) for k in group.keywords])
 
     else:
 

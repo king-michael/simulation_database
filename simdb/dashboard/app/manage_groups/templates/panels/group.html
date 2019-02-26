@@ -14,10 +14,10 @@
   <div class="x_content">
     <div class="">
         <table class="table">
-            {%- for name, value in group_keywords[group] %}
+            {%- for name in group_keywords[group] %}
                 <tr>
                     <td>{{ name }}</td>
-                    <td>{% if value != None %}  {{ value }} {% endif %}</td>
+                    <td>{% if group_keywords[group][name] != None %}  {{ group_keywords[group][name] }} {% endif %}</td>
                 </tr>
             {%- endfor %}
         </table>
