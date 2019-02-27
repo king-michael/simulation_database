@@ -42,7 +42,7 @@ string_types = str if sys.version_info[0] == 3 else basestring
 Session = sessionmaker()
 
 
-def create_new_database(db_path):
+def create_new_database(db_path, priority=None):
     """
     Creates a new database.
 
@@ -68,10 +68,12 @@ def create_new_database(db_path):
     session = Session()
     Base.metadata.create_all(engine)
 
+    session.info["SIMDB_PRIORITY"] = priority or 0
+
     return session
 
 
-def connect_database(db_path):
+def connect_database(db_path, priority=None):
     """
     Open database and return session.
 
@@ -96,11 +98,14 @@ def connect_database(db_path):
     engine = create_engine('sqlite:///{}'.format(db_path))
     Session.configure(bind=engine)
     session = Session()
+
+    session.info["SIMDB_PRIORITY"] = priority or 0
+
     return session
 
 
 @contextmanager
-def session_handler(db_path, create=False):
+def session_handler(db_path, create=False, priority=None):
     """
     Context manager for sessions.
 
@@ -126,6 +131,7 @@ def session_handler(db_path, create=False):
         engine = create_engine('sqlite:///{}'.format(db_path))
         Session.configure(bind=engine)
         session = Session()
+        session.info["SIMDB_PRIORITY"] = priority or 0
     else:
         raise IOError("No such file or directory: '{}'".format(db_path))
     try:
@@ -449,7 +455,7 @@ def get_keywords(session, entry_id):
     return keywords
 
 
-def add_single_keyword(session, entry_id, name, value=None, unique=True, main_id=None):
+def add_single_keyword(session, entry_id, name, value=None, unique=True, main_id=None, priority=None):
     """
     Function to add a single `Keyword`.
 
@@ -469,6 +475,9 @@ def add_single_keyword(session, entry_id, name, value=None, unique=True, main_id
         ID in the `main` table. (Default is `None`.)
     """
 
+    # evaluate priority
+    priority = priority or session.info["SIMDB_PRIORITY"]
+
     # get keyword if unique else None
     keyword = session.query(Keywords).join(Main)\
         .filter(Keywords.name == name)\
@@ -479,13 +488,15 @@ def add_single_keyword(session, entry_id, name, value=None, unique=True, main_id
     if keyword is None:
         if main_id is None:
             main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
-        keyword = Keywords(name=name, value=value, main_id=main_id)
+        keyword = Keywords(name=name, value=value, main_id=main_id, priority=priority)
     else:
-        keyword.value = value
+        if priority >= keyword.priority:
+            keyword.value = value
+
     session.add(keyword)
 
 
-def update_keywords(session, entry_id, **kwargs):
+def update_keywords(session, entry_id, priority=None, **kwargs):
     """
     Function to update / add keywords.
 
@@ -499,11 +510,15 @@ def update_keywords(session, entry_id, **kwargs):
         keyword name and value
     """
 
+    # evaluate priority
+    priority = priority or session.info["SIMDB_PRIORITY"]
+
     keywords = session.query(Keywords).join(Main)\
         .filter(Main.entry_id == entry_id)\
         .filter(Keywords.name.in_(kwargs.keys())).all()
     for keyword in keywords:
-        keyword.value = kwargs.pop(keyword.name)
+        if priority >= keyword.priority:
+            keyword.value = kwargs.pop(keyword.name)
 
     if len(keywords) != 0:
         main_id = keywords[0].main_id
@@ -511,11 +526,11 @@ def update_keywords(session, entry_id, **kwargs):
         main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
 
     for name, value in kwargs.items():
-        keywords.append(Keywords(name=name, value=value, main_id=main_id))
+        keywords.append(Keywords(name=name, value=value, main_id=main_id, priority=priority))
     session.add_all(keywords)
 
 
-def set_keywords(session, entry_id, **kwargs):
+def set_keywords(session, entry_id, priority=None, **kwargs):
     """
     Function to set keywords. Overwrites the old.
 
@@ -528,13 +543,22 @@ def set_keywords(session, entry_id, **kwargs):
     kwargs : dict
         keyword name and value
     """
+
+    # evaluate priority
+    priority = priority or session.info["SIMDB_PRIORITY"]
+
     main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
-    session.query(Keywords).filter(Keywords.main_id == main_id).delete()
-    for name, value in kwargs.items():
-        session.add(Keywords(name=name, value=value, main_id=main_id))
+    keywords = session.query(Keywords).filter(Keywords.main_id == main_id).all()
+    for keyword in keywords:
+        if priority >= keyword.priority:
+            session.delete(keyword)
+
+    # for name, value in kwargs.items():
+    #     session.add(Keywords(name=name, value=value, main_id=main_id))
+    update_keywords(session, entry_id, priority=priority, **kwargs)
 
 
-def delete_keywords(session, entry_id, *args):
+def delete_keywords(session, entry_id, priority=None, *args):
     """
     Function to delete keywords.
 
@@ -550,14 +574,19 @@ def delete_keywords(session, entry_id, *args):
     -------
 
     """
+
+    # evaluate priority
+    priority = priority or session.info["SIMDB_PRIORITY"]
+
     keywords = session.query(Keywords).join(Main)\
         .filter(Main.entry_id == entry_id)\
         .filter(Keywords.name.in_(args)).all()
     for keyword in keywords:
-        session.delete(keyword)
+        if priority >= keyword.priority:
+            session.delete(keyword)
 
 
-def delete_all_keywords(session, entry_id):
+def delete_all_keywords(session, entry_id, priority=None):
     """
     Function to delete all keywords for an entry.
 
@@ -568,11 +597,15 @@ def delete_all_keywords(session, entry_id):
     entry_id : str
         entry id in the database
     """
+    # evaluate priority
+    priority = priority or session.info["SIMDB_PRIORITY"]
+
     keywords = session.query(Keywords).join(Main)\
         .filter(Main.entry_id == entry_id)\
         .all()
     for keyword in keywords:
-        session.delete(keyword)
+        if priority >= keyword.priority:
+            session.delete(keyword)
 
 
 # =========================================================================== #
