@@ -431,6 +431,66 @@ def sim2dict(sim):
     sim_dict['groups'] = [g.name for g in sim.groups]
     return sim_dict
 
+
+# =========================================================================== #
+# add/update entries
+# =========================================================================== #
+
+def add_entry(session, entry_id, priority=None, **kwargs):
+    """
+    Placeholder function.
+    """
+
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+
+    entry = session.query(Main).filter(Main.entry_id == entry_id).first()
+
+    if entry is not None:
+
+        print("entry_id='{}' already in DB. Use update_entry().".format(entry_id))
+
+    else:
+
+        entry = Main(entry_id=entry_id, priority=priority, **kwargs)
+        session.add(entry)
+
+
+def update_entry(session, entry_id, priority=None, **kwargs):
+    """
+    Placeholder function.
+    """
+
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+
+    entry = session.query(Main).filter(Main.entry_id == entry_id).first()
+
+    if entry is not None:
+
+        if priority >= entry.priority:
+            entry.priority = priority
+            for name, value in kwargs.items():
+                setattr(entry, name, value)
+
+    else:
+
+        entry = Main(entry_id=entry_id, priority=priority, **kwargs)
+        session.add(entry)
+
+
+def delete_entry(session, entry_id, priority=None):
+    """
+    Placeholder function.
+    """
+
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+
+    entry = session.query(Main).filter(Main.entry_id == entry_id).first()
+
+    if entry is not None:
+        if priority >= entry.priority:
+            session.delete(entry)
+
+
 # =========================================================================== #
 # get/set/update keywords
 # =========================================================================== #
