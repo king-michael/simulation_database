@@ -53,7 +53,7 @@ def create_new_database(db_path):
 
     Returns
     -------
-    session : sessionmaker
+    session : sqlalchemy.orm.session.Session
         SQL session
 
     Raises
@@ -82,7 +82,7 @@ def connect_database(db_path):
 
     Returns
     -------
-    session : sessionmaker
+    session : sqlalchemy.orm.session.Session
         SQL session
 
     Raises
@@ -445,8 +445,9 @@ def get_keywords(session, entry_id):
     keywords : dict
         Keywords for the entry with `entry_id`
     """
-    query = session.query(Keywords.name, Keywords.value).join(Main).filter(Main.entry_id == entry_id)
-    keywords = dict(query.all())
+    sim = session.query(Main).filter(Main.entry_id == entry_id).one()
+    #query = session.query(Keywords.name, Keywords.value).join(Main).filter(Main.entry_id == entry_id)
+    keywords = dict([(keyword.name, keyword.value) for keyword in sim.keywords])
     return keywords
 
 
@@ -509,7 +510,7 @@ def delete_keywords(session, entry_id, keyword_names):
         SQL Alchemy session
     entry_id : str
         entry id in the database
-    keyword_names : str or List[str]
+    keyword_names : str or list
         List of names to delete
     Returns
     -------
