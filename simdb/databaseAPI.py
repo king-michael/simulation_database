@@ -141,6 +141,7 @@ def session_handler(db_path, create=False):
 # get_all_functions
 # =========================================================================== #
 
+
 def get_all_keywords(session, groups=None, count=False):
     """
     Function to get all keywords.
@@ -150,7 +151,7 @@ def get_all_keywords(session, groups=None, count=False):
     session : sqlalchemy.orm.session.Session
         SQL Alchemy session
     groups : list(str)
-        list of groups for selection
+        list of groups for selection, connects them with a OR keyword
     count : bool
         return count together with keywords and
         values list(tuple(str, int))
@@ -449,43 +450,7 @@ def get_keywords(session, entry_id):
     return keywords
 
 
-def add_single_keyword(session, entry_id, name, value=None, unique=True, main_id=None):
-    """
-    Function to add a single `Keyword`.
-
-    Parameters
-    ----------
-    session : sqlalchemy.orm.session.Session
-        SQL Alchemy session
-    entry_id : str
-        entry id in the database
-    name : str
-        Name of the keyword.
-    value : Union[float,int,str,bool,None]
-        Value of the keyword. (Default is None.)
-    unique : bool
-        Keyword will be assumed to be unqiue. (Default is `True`.)
-    main_id : int or None
-        ID in the `main` table. (Default is `None`.)
-    """
-
-    # get keyword if unique else None
-    keyword = session.query(Keywords).join(Main)\
-        .filter(Keywords.name == name)\
-        .filter(Main.entry_id == entry_id)\
-        .one_or_none() if unique else None
-
-    # create keyword if not there or not unique else update
-    if keyword is None:
-        if main_id is None:
-            main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
-        keyword = Keywords(name=name, value=value, main_id=main_id)
-    else:
-        keyword.value = value
-    session.add(keyword)
-
-
-def update_keywords(session, entry_id, **kwargs):
+def update_keywords(session, entry_id, keywords):
     """
     Function to update / add keywords.
 
@@ -495,27 +460,27 @@ def update_keywords(session, entry_id, **kwargs):
         SQL Alchemy session
     entry_id : str
         entry id in the database
-    kwargs : dict
+    keywords : dict
         keyword name and value
     """
 
-    keywords = session.query(Keywords).join(Main)\
+    keywords_db = session.query(Keywords).join(Main)\
         .filter(Main.entry_id == entry_id)\
-        .filter(Keywords.name.in_(kwargs.keys())).all()
-    for keyword in keywords:
-        keyword.value = kwargs.pop(keyword.name)
+        .filter(Keywords.name.in_(keywords.keys())).all()
+    for keyword in keywords_db:
+        keyword.value = keywords.pop(keyword.name)
 
-    if len(keywords) != 0:
-        main_id = keywords[0].main_id
+    if len(keywords_db) != 0:
+        main_id = keywords_db[0].main_id
     else:
         main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
 
-    for name, value in kwargs.items():
-        keywords.append(Keywords(name=name, value=value, main_id=main_id))
-    session.add_all(keywords)
+    for name, value in keywords.items():
+        keywords_db.append(Keywords(name=name, value=value, main_id=main_id))
+    session.add_all(keywords_db)
 
 
-def set_keywords(session, entry_id, **kwargs):
+def set_keywords(session, entry_id, keywords):
     """
     Function to set keywords. Overwrites the old.
 
@@ -525,16 +490,16 @@ def set_keywords(session, entry_id, **kwargs):
         SQL Alchemy session
     entry_id : str
         entry id in the database
-    kwargs : dict
+    keywords : dict
         keyword name and value
     """
     main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
     session.query(Keywords).filter(Keywords.main_id == main_id).delete()
-    for name, value in kwargs.items():
+    for name, value in keywords.items():
         session.add(Keywords(name=name, value=value, main_id=main_id))
 
 
-def delete_keywords(session, entry_id, *args):
+def delete_keywords(session, entry_id, keyword_names):
     """
     Function to delete keywords.
 
@@ -544,15 +509,17 @@ def delete_keywords(session, entry_id, *args):
         SQL Alchemy session
     entry_id : str
         entry id in the database
-    args : List[str]
-
+    keyword_names : str or List[str]
+        List of names to delete
     Returns
     -------
 
     """
+    if type(keyword_names) == string_types:
+        keyword_names = [keyword_names,]
     keywords = session.query(Keywords).join(Main)\
         .filter(Main.entry_id == entry_id)\
-        .filter(Keywords.name.in_(args)).all()
+        .filter(Keywords.name.in_(keyword_names)).all()
     for keyword in keywords:
         session.delete(keyword)
 
@@ -716,66 +683,7 @@ def delete_meta_group(session, entry_id, meta_group_name):
         session.delete(meta_group)
 
 
-def add_meta_data(session, entry_id, meta_group_name, unique=True, metagroup_id=None, **kwargs):
-    """
-    Add meta data to entry.
-
-    Create MetaGroup if not there.
-
-    Parameters
-    ----------
-    session : sqlalchemy.orm.session.Session
-        SQL Alchemy session
-    entry_id : str
-        entry id in the database
-    unique : bool
-        Keyword will be assumed to be unqiue. (Default is `True`.)
-    main_id : int or None
-        ID in the `main` table. (Default is `None`.)
-    meta_group_name: str
-        Name of meta group, e.g. Thermostat, Barostat
-    **kwargs : kwargs
-        keyword1="value1", keyword2="value2"
-
-    Returns
-    -------
-    meta_entries : List[MetaEntry]
-        List of added MetaEntries
-    """
-    meta_entries = session.query(MetaEntry).join(MetaGroups) \
-        .filter(MetaGroups.name == meta_group_name)\
-        .filter(MetaEntry.metagroup_id == MetaGroups.id)\
-        .filter(MetaGroups.main_id == entry_id)\
-        .filter(MetaEntry.name.in_(kwargs.keys()))\
-        .all()
-
-    if unique:
-        for meta_entry in meta_entries:
-            kwargs.pop(meta_entry.name)
-
-    if metagroup_id is None:
-        if len(meta_entries) != 0:
-            metagroup_id = meta_entries[0].metagroup_id
-        else:
-            metagroup_id = session.query(MetaGroups.id).join(Main)\
-                .filter(MetaGroups.name == meta_group_name) \
-                .filter(Main.entry_id == entry_id).first()
-            if metagroup_id is not None and len(metagroup_id) > 0:
-                metagroup_id = metagroup_id[0]
-            else:
-                main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
-                meta_group = MetaGroups(name=meta_group_name, main_id=main_id)
-                session.add(meta_group)
-                session.flush()
-                metagroup_id = meta_group.id
-    for name, value in kwargs.items():
-        meta_entries.append(MetaEntry(name=name, value=value, metagroup_id=metagroup_id))
-    session.add_all(meta_entries)
-
-    return meta_entries
-
-
-def update_meta_data(session, entry_id, meta_group_name, **kwargs):
+def update_meta_data(session, entry_id, meta_group_name, meta_data):
     """
     Update meta data in entry.
 
@@ -787,9 +695,8 @@ def update_meta_data(session, entry_id, meta_group_name, **kwargs):
         entry id in the database
     meta_group_name: str
         Name of meta group, e.g. Thermostat, Barostat
-    **kwargs : kwargs
-        update keyword to value
-        keyword = "value"
+    meta_data : dict
+        keyword : "value"
 
     Returns
     -------
@@ -810,12 +717,12 @@ def update_meta_data(session, entry_id, meta_group_name, **kwargs):
         # get all meta entries for selected group and db entry which should be updated
         meta_entries = session.query(MetaEntry).join(MetaGroups).join(Main) \
             .filter(MetaGroups.id == metagroup_id)\
-            .filter(MetaEntry.name.in_(kwargs.keys())) \
+            .filter(MetaEntry.name.in_(meta_data.keys())) \
             .all()
 
         # update existing meta entries, remove updated from kwargs
         for meta_entry in meta_entries:
-            meta_entry.value = kwargs.pop(meta_entry.name)
+            meta_entry.value = meta_data.pop(meta_entry.name)
 
     else:
 
@@ -828,13 +735,13 @@ def update_meta_data(session, entry_id, meta_group_name, **kwargs):
         metagroup_id = meta_group.id
 
     # add missing meta entries to group
-    for name, value in kwargs.items():
+    for name, value in meta_data.items():
         meta_entries.append(MetaEntry(name=name, value=value, metagroup_id=metagroup_id))
     session.add_all(meta_entries)
 
     return meta_entries
 
-def set_meta_data(session, entry_id, meta_group_name, **kwargs):
+def set_meta_data(session, entry_id, meta_group_name, meta_data):
     """
     set meta data in entry.
 
@@ -846,9 +753,8 @@ def set_meta_data(session, entry_id, meta_group_name, **kwargs):
         entry id in the database
     meta_group_name: str
         Name of meta group, e.g. Thermostat, Barostat
-    **kwargs : kwargs
-        set keyword to value
-        keyword = "value"
+    meta_data : dict
+        keyword : "value"
 
     Returns
     -------
@@ -856,19 +762,20 @@ def set_meta_data(session, entry_id, meta_group_name, **kwargs):
         List of added MetaEntries
     """
 
-    meta_datas = session.query(MetaEntry).join(MetaGroups).join(Main) \
+    meta_entries = session.query(MetaEntry).join(MetaGroups).join(Main) \
         .filter(MetaGroups.name == meta_group_name) \
         .filter(Main.entry_id == entry_id) \
         .all()
-    for meta_data in meta_datas:
-        session.delete(meta_data)
+    for meta_entry in meta_entries:
+        session.delete(meta_entry)
 
-    meta_entries = add_meta_data(session=session, entry_id=entry_id,
-                                 meta_group_name=meta_group_name, **kwargs)
+    meta_entries = update_meta_data(session=session, entry_id=entry_id,
+                                    meta_group_name=meta_group_name,
+                                    meta_data=meta_data)
 
     return meta_entries
 
-def remove_meta_data(session, entry_id, meta_group_name, **kwargs):
+def remove_meta_data(session, entry_id, meta_group_name, meta_data):
     """
     Remove meta data in entry.
 
@@ -880,10 +787,11 @@ def remove_meta_data(session, entry_id, meta_group_name, **kwargs):
         Entry ID in database
     meta_group_name: str
         Name of meta group, e.g. Thermostat, Barostat
-    **kwargs : kwargs
+    meta_data : dict
         keyword = "value": Value is given, remove if entry has given value
         keyword = None : Remove meta data entry independent of value
     """
+    raise UserWarning("FUCK FUNCTION IS NONESENSE")
     meta_datas = session.query(MetaEntry).join(MetaGroups).join(Main) \
         .filter(MetaGroups.name == meta_group_name) \
         .filter(Main.entry_id == entry_id) \
@@ -983,7 +891,7 @@ def get_group_keywords(session, group_name):
         raise NoResultFound("group_name = '{}' was not found in database.".format(group_name))
 
 
-def set_group_keywords(session, group_name, **kwargs):
+def set_group_keywords(session, group_name, group_keywords):
     """
     Function to set group keywords. Overwrites the old!
 
@@ -993,7 +901,7 @@ def set_group_keywords(session, group_name, **kwargs):
         SQL Alchemy session
     group_name : str
         group_name in the database
-    kwargs : dict
+    group_keywords : dict
         keyword name and value
     """
     group = session.query(Groups).filter(Groups.name == group_name).first()
@@ -1001,7 +909,7 @@ def set_group_keywords(session, group_name, **kwargs):
     if group is not None:
 
         group.keywords_query.delete()
-        for name, value in kwargs.items():
+        for name, value in group_keywords.items():
             group.keywords.append(GroupKeywords(name=name, value=value))
 
     else:
@@ -1009,7 +917,7 @@ def set_group_keywords(session, group_name, **kwargs):
         raise NoResultFound("group_name = '{}' was not found in database.".format(group_name))
 
 
-def update_group_keywords(session, group_name, **kwargs):
+def update_group_keywords(session, group_name, group_keywords):
     """
     Function to update / add group keywords.
     Will create new group if group is not in database.
@@ -1020,7 +928,7 @@ def update_group_keywords(session, group_name, **kwargs):
         SQL Alchemy session
     group_name : str
         group name in the database
-    kwargs : dict
+    group_keywords : dict
         keyword name and value
     """
     # get group
@@ -1029,9 +937,9 @@ def update_group_keywords(session, group_name, **kwargs):
     if group is not None:
 
         # update existing group keywords
-        group_keywords = group.keywords_query.filter(GroupKeywords.name.in_(kwargs.keys())).all()
-        for keyword in group_keywords:
-            keyword.value = kwargs.pop(keyword.name)
+        group_keywords_db = group.keywords_query.filter(GroupKeywords.name.in_(group_keywords.keys())).all()
+        for keyword in group_keywords_db:
+            keyword.value = group_keywords.pop(keyword.name)
 
     else:
 
@@ -1039,7 +947,7 @@ def update_group_keywords(session, group_name, **kwargs):
         group = Groups(name=group_name)
         session.add(group)
 
-    for name, value in kwargs.items():
+    for name, value in group_keywords.items():
         group.keywords.append(GroupKeywords(name=name, value=value))
 
 
