@@ -1,39 +1,11 @@
-from flask import jsonify, render_template, redirect, request, url_for
-
-from app import db
 from app.base import blueprint
-# from app.base.forms import LoginForm, CreateAccountForm
-# from app.base.models import User
+from flask import redirect, url_for
 
 
 @blueprint.route('/')
 def route_default():
     return redirect(url_for('viewer_blueprint.viewer_index'))
 
-
-
-# @blueprint.route('/<template>')
-# def route_template(template):
-#     return render_template(template + '.html')
-#
-#
-# @blueprint.route('/fixed_<template>')
-# def route_fixed_template(template):
-#     return render_template('fixed/fixed_{}.html'.format(template))
-#
-#
-# @blueprint.route('/page_<error>')
-# def route_errors(error):
-#     return render_template('errors/page_{}.html'.format(error))
-#
-#
-# @blueprint.route('/shutdown')
-# def shutdown():
-#     func = request.environ.get('werkzeug.server.shutdown')
-#     if func is None:
-#         raise RuntimeError('Not running with the Werkzeug Server')
-#     func()
-#     return 'Server shutting down...'
 
 ## Errors
 ## AB: it is not possible to define this on blueprint level in python2

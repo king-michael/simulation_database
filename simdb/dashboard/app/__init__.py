@@ -1,18 +1,15 @@
 from flask import Flask, url_for
-# from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from importlib import import_module
 from logging import basicConfig, DEBUG, getLogger, StreamHandler
 from os import path
 
 db = SQLAlchemy()
-# login_manager = LoginManager()
 
 
 def register_extensions(app):
     # add database to app
     db.init_app(app)
-    # login_manager.init_app(app)
 
 
 def register_blueprints(app):

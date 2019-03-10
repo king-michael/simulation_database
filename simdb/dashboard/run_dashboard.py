@@ -21,6 +21,8 @@ Migrate(app, db)
 if __name__ == '__main__':
 
     # empty log
+    with open("error.log", "w") as log:
+        log.write("")
 
     # Start app
     app.run(debug=True)

@@ -1,0 +1,35 @@
+{% extends "base_site.html" %}
+
+{% block title %} TEMPLATE {% endblock title %}
+
+{% block stylesheets %}
+    {{ super() }}
+    <!-- ADD CSS FILES HERE-->
+
+    <!--custom css file-->
+    <link href="{{ url_for('TEMPLATE_blueprint.static', filename='css/custom.css') }}" rel="stylesheet">
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="right_col" role="main">
+
+
+    <!--ADD HTML CONTENT HERE-->
+
+    <div class="row">
+        <div class="col-md-4 col-sm-12 col-xs-12">
+        {% include 'panels/example_panel.html' %}
+        </div>
+    </div>
+
+</div>
+<div class="clearfix"></div>
+{% endblock content %}
+
+{% block javascripts %}
+    {{ super()}}
+    <!-- ADD JAVASCRIPT FILES HERE -->
+
+    <!--custom JS script-->
+    <script src="{{ url_for('TEMPLATE_blueprint.static', filename='js/custom.js') }}"></script>
+{% endblock javascripts %}
