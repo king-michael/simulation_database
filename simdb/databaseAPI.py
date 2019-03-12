@@ -38,11 +38,13 @@ from sqlalchemy import or_, and_
 # define string types
 string_types = str if sys.version_info[0] == 3 else basestring
 
+session_info = {
+    "SIMDB_PRIORITY" : 0
+}
+Session = sessionmaker(info=session_info)
 
-Session = sessionmaker()
 
-
-def create_new_database(db_path):
+def create_new_database(db_path, priority=None):
     """
     Creates a new database.
 
@@ -68,10 +70,12 @@ def create_new_database(db_path):
     session = Session()
     Base.metadata.create_all(engine)
 
+    session.info["SIMDB_PRIORITY"] = priority or session.info["SIMDB_PRIORITY"]
+
     return session
 
 
-def connect_database(db_path):
+def connect_database(db_path, priority=None):
     """
     Open database and return session.
 
@@ -96,11 +100,14 @@ def connect_database(db_path):
     engine = create_engine('sqlite:///{}'.format(db_path))
     Session.configure(bind=engine)
     session = Session()
+
+    session.info["SIMDB_PRIORITY"] = priority or session.info["SIMDB_PRIORITY"]
+
     return session
 
 
 @contextmanager
-def session_handler(db_path, create=False):
+def session_handler(db_path, create=False, priority=None):
     """
     Context manager for sessions.
 
@@ -126,6 +133,7 @@ def session_handler(db_path, create=False):
         engine = create_engine('sqlite:///{}'.format(db_path))
         Session.configure(bind=engine)
         session = Session()
+        session.info["SIMDB_PRIORITY"] = priority or session.info["SIMDB_PRIORITY"]
     else:
         raise IOError("No such file or directory: '{}'".format(db_path))
     try:
@@ -423,6 +431,66 @@ def sim2dict(sim):
     sim_dict['groups'] = [g.name for g in sim.groups]
     return sim_dict
 
+
+# =========================================================================== #
+# add/update entries
+# =========================================================================== #
+
+def add_entry(session, entry_id, priority=None, **kwargs):
+    """
+    Placeholder function.
+    """
+
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+
+    entry = session.query(Main).filter(Main.entry_id == entry_id).first()
+
+    if entry is not None:
+
+        print("entry_id='{}' already in DB. Use update_entry().".format(entry_id))
+
+    else:
+
+        entry = Main(entry_id=entry_id, priority=priority, **kwargs)
+        session.add(entry)
+
+
+def update_entry(session, entry_id, priority=None, **kwargs):
+    """
+    Placeholder function.
+    """
+
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+
+    entry = session.query(Main).filter(Main.entry_id == entry_id).first()
+
+    if entry is not None:
+
+        if priority >= entry.priority:
+            entry.priority = priority
+            for name, value in kwargs.items():
+                setattr(entry, name, value)
+
+    else:
+
+        entry = Main(entry_id=entry_id, priority=priority, **kwargs)
+        session.add(entry)
+
+
+def delete_entry(session, entry_id, priority=None):
+    """
+    Placeholder function.
+    """
+
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+
+    entry = session.query(Main).filter(Main.entry_id == entry_id).first()
+
+    if entry is not None:
+        if priority >= entry.priority:
+            session.delete(entry)
+
+
 # =========================================================================== #
 # get/set/update keywords
 # =========================================================================== #
@@ -449,7 +517,7 @@ def get_keywords(session, entry_id):
     return keywords
 
 
-def add_single_keyword(session, entry_id, name, value=None, unique=True, main_id=None):
+def add_single_keyword(session, entry_id, name, value=None, unique=True, main_id=None, priority=None):
     """
     Function to add a single `Keyword`.
 
@@ -469,6 +537,9 @@ def add_single_keyword(session, entry_id, name, value=None, unique=True, main_id
         ID in the `main` table. (Default is `None`.)
     """
 
+    # evaluate priority
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+
     # get keyword if unique else None
     keyword = session.query(Keywords).join(Main)\
         .filter(Keywords.name == name)\
@@ -479,13 +550,16 @@ def add_single_keyword(session, entry_id, name, value=None, unique=True, main_id
     if keyword is None:
         if main_id is None:
             main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
-        keyword = Keywords(name=name, value=value, main_id=main_id)
+        keyword = Keywords(name=name, value=value, main_id=main_id, priority=priority)
     else:
-        keyword.value = value
+        if priority >= keyword.priority:
+            keyword.priority = priority
+            keyword.value = value
+
     session.add(keyword)
 
 
-def update_keywords(session, entry_id, **kwargs):
+def update_keywords(session, entry_id, priority=None, **kwargs):
     """
     Function to update / add keywords.
 
@@ -499,11 +573,16 @@ def update_keywords(session, entry_id, **kwargs):
         keyword name and value
     """
 
+    # evaluate priority
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+
     keywords = session.query(Keywords).join(Main)\
         .filter(Main.entry_id == entry_id)\
         .filter(Keywords.name.in_(kwargs.keys())).all()
     for keyword in keywords:
-        keyword.value = kwargs.pop(keyword.name)
+        if priority >= keyword.priority:
+            keyword.priority = priority
+            keyword.value = kwargs.pop(keyword.name)
 
     if len(keywords) != 0:
         main_id = keywords[0].main_id
@@ -511,11 +590,11 @@ def update_keywords(session, entry_id, **kwargs):
         main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
 
     for name, value in kwargs.items():
-        keywords.append(Keywords(name=name, value=value, main_id=main_id))
+        keywords.append(Keywords(name=name, value=value, main_id=main_id, priority=priority))
     session.add_all(keywords)
 
 
-def set_keywords(session, entry_id, **kwargs):
+def set_keywords(session, entry_id, priority=None, **kwargs):
     """
     Function to set keywords. Overwrites the old.
 
@@ -528,13 +607,22 @@ def set_keywords(session, entry_id, **kwargs):
     kwargs : dict
         keyword name and value
     """
+
+    # evaluate priority
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+
     main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
-    session.query(Keywords).filter(Keywords.main_id == main_id).delete()
-    for name, value in kwargs.items():
-        session.add(Keywords(name=name, value=value, main_id=main_id))
+    keywords = session.query(Keywords).filter(Keywords.main_id == main_id).all()
+    for keyword in keywords:
+        if priority >= keyword.priority:
+            session.delete(keyword)
+
+    # for name, value in kwargs.items():
+    #     session.add(Keywords(name=name, value=value, main_id=main_id))
+    update_keywords(session, entry_id, priority=priority, **kwargs)
 
 
-def delete_keywords(session, entry_id, *args):
+def delete_keywords(session, entry_id, priority=None, *args):
     """
     Function to delete keywords.
 
@@ -550,14 +638,19 @@ def delete_keywords(session, entry_id, *args):
     -------
 
     """
+
+    # evaluate priority
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+
     keywords = session.query(Keywords).join(Main)\
         .filter(Main.entry_id == entry_id)\
         .filter(Keywords.name.in_(args)).all()
     for keyword in keywords:
-        session.delete(keyword)
+        if priority >= keyword.priority:
+            session.delete(keyword)
 
 
-def delete_all_keywords(session, entry_id):
+def delete_all_keywords(session, entry_id, priority=None):
     """
     Function to delete all keywords for an entry.
 
@@ -568,15 +661,19 @@ def delete_all_keywords(session, entry_id):
     entry_id : str
         entry id in the database
     """
+    # evaluate priority
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+
     keywords = session.query(Keywords).join(Main)\
         .filter(Main.entry_id == entry_id)\
         .all()
     for keyword in keywords:
-        session.delete(keyword)
+        if priority >= keyword.priority:
+            session.delete(keyword)
 
 
 # =========================================================================== #
-# get/set/update keywords
+# get/set/update Meta Data
 # =========================================================================== #
 
 def get_meta_groups(session, entry_id, as_list=False):
@@ -655,7 +752,7 @@ def get_single_meta_group(session, entry_id, name, as_list=False):
         return None
     return metagroup.to_list() if as_list else metagroup.to_dict()
 
-def add_meta_group(session, entry_id, meta_group_name, unique=True, main_id=None):
+def add_meta_group(session, entry_id, meta_group_name, unique=True, main_id=None, priority=None):
     """
     Add a meta information group/block to entry.
 
@@ -678,6 +775,9 @@ def add_meta_group(session, entry_id, meta_group_name, unique=True, main_id=None
         added MetaGroups object
     """
 
+    # evaluate priority
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+
     # get meta_group if unique else None
     meta_group = session.query(MetaGroups).join(Main)\
         .filter(MetaGroups.name == meta_group_name)\
@@ -688,13 +788,15 @@ def add_meta_group(session, entry_id, meta_group_name, unique=True, main_id=None
     if meta_group is None:
         if main_id is None:
             main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
-        meta_group = MetaGroups(name=meta_group_name, main_id=main_id)
+        meta_group = MetaGroups(name=meta_group_name, main_id=main_id, priority=priority)
         session.add(meta_group)
+    else:
+        meta_group.priority = max(priority, meta_group.priority)
 
     return meta_group
 
 
-def delete_meta_group(session, entry_id, meta_group_name):
+def delete_meta_group(session, entry_id, meta_group_name, priority=None):
     """
     Remove a meta information group/block from entry.
 
@@ -708,15 +810,19 @@ def delete_meta_group(session, entry_id, meta_group_name):
         Name of meta group, e.g. Thermostat, Barostat
     """
 
+    # evaluate priority
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+
     meta_groups = session.query(MetaGroups).join(Main) \
         .filter(MetaGroups.name == meta_group_name)\
         .filter(Main.entry_id == entry_id) \
         .all()
     for meta_group in meta_groups:
-        session.delete(meta_group)
+        if priority >= meta_group.priority:
+            session.delete(meta_group)
 
 
-def add_meta_data(session, entry_id, meta_group_name, unique=True, metagroup_id=None, **kwargs):
+def add_meta_data(session, entry_id, meta_group_name, unique=True, metagroup_id=None, priority=None, **kwargs):
     """
     Add meta data to entry.
 
@@ -742,6 +848,10 @@ def add_meta_data(session, entry_id, meta_group_name, unique=True, metagroup_id=
     meta_entries : List[MetaEntry]
         List of added MetaEntries
     """
+
+    # evaluate priority
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+
     meta_entries = session.query(MetaEntry).join(MetaGroups) \
         .filter(MetaGroups.name == meta_group_name)\
         .filter(MetaEntry.metagroup_id == MetaGroups.id)\
@@ -764,18 +874,18 @@ def add_meta_data(session, entry_id, meta_group_name, unique=True, metagroup_id=
                 metagroup_id = metagroup_id[0]
             else:
                 main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
-                meta_group = MetaGroups(name=meta_group_name, main_id=main_id)
+                meta_group = MetaGroups(name=meta_group_name, main_id=main_id, priority=priority)
                 session.add(meta_group)
                 session.flush()
                 metagroup_id = meta_group.id
     for name, value in kwargs.items():
-        meta_entries.append(MetaEntry(name=name, value=value, metagroup_id=metagroup_id))
+        meta_entries.append(MetaEntry(name=name, value=value, metagroup_id=metagroup_id, priority=priority))
     session.add_all(meta_entries)
 
     return meta_entries
 
 
-def update_meta_data(session, entry_id, meta_group_name, **kwargs):
+def update_meta_data(session, entry_id, meta_group_name, priority=None, **kwargs):
     """
     Update meta data in entry.
 
@@ -797,6 +907,8 @@ def update_meta_data(session, entry_id, meta_group_name, **kwargs):
         List of added MetaEntries
     """
 
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+
     # get id of meta group, None if meta group does not exist
     metagroup_id = session.query(MetaGroups.id).join(Main) \
         .filter(MetaGroups.name == meta_group_name) \
@@ -815,26 +927,28 @@ def update_meta_data(session, entry_id, meta_group_name, **kwargs):
 
         # update existing meta entries, remove updated from kwargs
         for meta_entry in meta_entries:
-            meta_entry.value = kwargs.pop(meta_entry.name)
+            if priority >= meta_entry.priority:
+                meta_entry.value = kwargs.pop(meta_entry.name)
+                meta_entry.priority = priority
 
     else:
 
         # create new meta group
         meta_entries = []
         main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
-        meta_group = MetaGroups(name=meta_group_name, main_id=main_id)
+        meta_group = MetaGroups(name=meta_group_name, main_id=main_id, priority=priority)
         session.add(meta_group)
         session.flush()
         metagroup_id = meta_group.id
 
     # add missing meta entries to group
     for name, value in kwargs.items():
-        meta_entries.append(MetaEntry(name=name, value=value, metagroup_id=metagroup_id))
+        meta_entries.append(MetaEntry(name=name, value=value, metagroup_id=metagroup_id, priority=priority))
     session.add_all(meta_entries)
 
     return meta_entries
 
-def set_meta_data(session, entry_id, meta_group_name, **kwargs):
+def set_meta_data(session, entry_id, meta_group_name, priority=None, **kwargs):
     """
     set meta data in entry.
 
@@ -856,19 +970,22 @@ def set_meta_data(session, entry_id, meta_group_name, **kwargs):
         List of added MetaEntries
     """
 
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+
     meta_datas = session.query(MetaEntry).join(MetaGroups).join(Main) \
         .filter(MetaGroups.name == meta_group_name) \
         .filter(Main.entry_id == entry_id) \
         .all()
     for meta_data in meta_datas:
-        session.delete(meta_data)
+        if priority >= meta_data.priority:
+            session.delete(meta_data)
 
-    meta_entries = add_meta_data(session=session, entry_id=entry_id,
-                                 meta_group_name=meta_group_name, **kwargs)
+    meta_entries = update_meta_data(session=session, entry_id=entry_id,
+                                    meta_group_name=meta_group_name, priority=priority, **kwargs)
 
     return meta_entries
 
-def remove_meta_data(session, entry_id, meta_group_name, **kwargs):
+def remove_meta_data(session, entry_id, meta_group_name, priority=None, **kwargs):
     """
     Remove meta data in entry.
 
@@ -884,20 +1001,96 @@ def remove_meta_data(session, entry_id, meta_group_name, **kwargs):
         keyword = "value": Value is given, remove if entry has given value
         keyword = None : Remove meta data entry independent of value
     """
+
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+
     meta_datas = session.query(MetaEntry).join(MetaGroups).join(Main) \
         .filter(MetaGroups.name == meta_group_name) \
         .filter(Main.entry_id == entry_id) \
+        .filter(MetaEntry.name.in_(kwargs.keys())) \
         .all()
+
     for meta_data in meta_datas:
-        session.delete(meta_data)
+        value = kwargs.get(meta_data.name)
+        if priority >= meta_data.priority and (value is None or value == meta_data.value):
+            session.delete(meta_data)
 
 
 
 # =========================================================================== #
-# manage groups
+# MANAGE GROUPS                                                               #
 # =========================================================================== #
 
-def add_to_group(session, entry_id, group_name):
+def add_group(session, group_name, priority=None):
+    """Add group to database.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    group_name: str
+        Name of group
+    priority: int or None
+        use session priority if None
+    """
+
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+    group = session.query(Groups).filter(Groups.name == group_name).first()
+
+    if not group:
+        group = Groups(name=group_name, priority=priority)
+        session.add(group)
+    else:
+        if priority >= group.priority:
+            group.priority = priority
+
+
+def remove_group(session, group_name, priority=None):
+    """Remove group from database.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    group_name: str
+        Name of group
+    priority: int or None
+        use session priority if None
+    """
+
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+    group = session.query(Groups).filter(Groups.name == group_name).first()
+
+    if group:
+        if priority >= group.priority:
+            session.delete(group)
+
+
+def rename_group(session, group_name, new_group_name, priority=None):
+    """Rename group in database.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    group_name: str
+        Name of group
+    new_group_name: str
+        Name of group
+    priority: int or None
+        use session priority if None
+    """
+
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+    group = session.query(Groups).filter(Groups.name == group_name).first()
+
+    if group:
+        if priority >= group.priority:
+            group.name = new_group_name
+            group.priority = priority
+
+
+def add_to_group(session, entry_id, group_name, priority=None):
     """Add simulation to group.
 
     Parameters
@@ -908,12 +1101,10 @@ def add_to_group(session, entry_id, group_name):
         Entry ID in database
     group_name: str
         Name of group
-
-    Returns
-    -------
-    group : Groups
+    priority: int or None
+        use session priority if None
     """
-
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
     entry = session.query(Main).filter(Main.entry_id == entry_id).first()
 
     if entry:
@@ -921,14 +1112,12 @@ def add_to_group(session, entry_id, group_name):
         # get group if already in DB or create new group
         group = session.query(Groups).filter(Groups.name == group_name).first()
         if not group:
-            group = Groups(name=group_name)
+            group = Groups(name=group_name, priority=priority)
             session.add(group)
-            session.flush()
 
         if group not in entry.groups:
-            group.entries.append(entry)
+            entry.groups.append(group)
 
-    return group
 
 
 def remove_from_group(session, entry_id, group_name):
@@ -942,10 +1131,6 @@ def remove_from_group(session, entry_id, group_name):
         Entry ID in database
     group_name: str
         Name of group
-
-    Returns
-    -------
-    True if entry was removed from group, otherwise False.
     """
 
     entry = session.query(Main).filter(Main.entry_id == entry_id).first()
@@ -983,33 +1168,7 @@ def get_group_keywords(session, group_name):
         raise NoResultFound("group_name = '{}' was not found in database.".format(group_name))
 
 
-def set_group_keywords(session, group_name, **kwargs):
-    """
-    Function to set group keywords. Overwrites the old!
-
-    Parameters
-    ----------
-    session : sqlalchemy.orm.session.Session
-        SQL Alchemy session
-    group_name : str
-        group_name in the database
-    kwargs : dict
-        keyword name and value
-    """
-    group = session.query(Groups).filter(Groups.name == group_name).first()
-
-    if group is not None:
-
-        group.keywords_query.delete()
-        for name, value in kwargs.items():
-            group.keywords.append(GroupKeywords(name=name, value=value))
-
-    else:
-
-        raise NoResultFound("group_name = '{}' was not found in database.".format(group_name))
-
-
-def update_group_keywords(session, group_name, **kwargs):
+def update_group_keywords(session, group_name, priority=None, **kwargs):
     """
     Function to update / add group keywords.
     Will create new group if group is not in database.
@@ -1022,8 +1181,11 @@ def update_group_keywords(session, group_name, **kwargs):
         group name in the database
     kwargs : dict
         keyword name and value
+    priority: int or None
+        use session priority if None
     """
-    # get group
+
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
     group = session.query(Groups).filter(Groups.name == group_name).first()
 
     if group is not None:
@@ -1031,21 +1193,24 @@ def update_group_keywords(session, group_name, **kwargs):
         # update existing group keywords
         group_keywords = group.keywords_query.filter(GroupKeywords.name.in_(kwargs.keys())).all()
         for keyword in group_keywords:
-            keyword.value = kwargs.pop(keyword.name)
+            if priority >= keyword.priority:
+                keyword.value = kwargs.pop(keyword.name)
+                keyword.priority = priority
 
     else:
 
         # create new group
-        group = Groups(name=group_name)
+        group = Groups(name=group_name, priority=priority)
         session.add(group)
 
+    # add missing keywords
     for name, value in kwargs.items():
-        group.keywords.append(GroupKeywords(name=name, value=value))
+        group.keywords.append(GroupKeywords(name=name, value=value, priority=priority))
 
 
-def delete_all_group_keywords(session, group_name):
+def delete_group_keywords(session, group_name, group_keywords, priority=None):
     """
-    Function to delete all keywords for a group.
+    Function to delete a list of keyword of a group.
 
     Parameters
     ----------
@@ -1053,30 +1218,71 @@ def delete_all_group_keywords(session, group_name):
         SQL Alchemy session
     group_name : str
         group name in the database
+    group_keywords : list(str)
+        keyword names of group
+    priority: int or None
+        use session priority if None
     """
+
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+    group_keyword = session.query(GroupKeywords).filter(Groups.name == group_name) \
+        .filter(GroupKeywords.name.in_(group_keywords)).all()
+
+    for keyword in group_keyword:
+        if priority >= keyword.priority:
+            session.delete(keyword)
+
+
+def delete_all_group_keywords(session, group_name, priority=None):
+    """
+    Function to delete all keywords of a group.
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    group_name : str
+        group name in the database
+    priority: int or None
+        use session priority if None
+    """
+
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
     group = session.query(Groups).filter(Groups.name == group_name).first()
 
     if group is not None:
 
-        group.keywords_query.delete()
+        for keyword in group.keywords:
+            if priority >= keyword.priority:
+                session.delete(keyword)
 
     else:
 
         raise NoResultFound("group_name = '{}' was not found in database.".format(group_name))
 
 
+def set_group_keywords(session, group_name, priority=None, **kwargs):
+    """
+    Function to set group keywords. Overwrites the old!
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    group_name : str
+        group_name in the database
+    kwargs : dict
+        keyword name and value
+    priority: int or None
+        use session priority if None
+    """
+
+    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
+    delete_all_group_keywords(session, group_name, priority=priority)
+    update_group_keywords(session, group_name, priority=priority, **kwargs)
 
 
-def selectByKeyword(table, name, value):
-    '''Get mask for selection of entries by keyword.'''
-    return table[name] == value
 
-
-def selectByTag(table, tag):
-    '''Get mask for selection of entries by tag.'''
-    split = table.tags.str.split(",")
-    mask = [True if np.any(np.array(i[1]) == tag) else False for i in split.items()]
-    return pd.Series(mask, index=range(1, len(mask) + 1))
 
 def store_dict(entry_id,
                path,
@@ -1184,3 +1390,14 @@ def store_dict(entry_id,
     return sim
 
 
+# DEPRICATED
+# def selectByKeyword(table, name, value):
+#     '''Get mask for selection of entries by keyword.'''
+#     return table[name] == value
+#
+#
+# def selectByTag(table, tag):
+#     '''Get mask for selection of entries by tag.'''
+#     split = table.tags.str.split(",")
+#     mask = [True if np.any(np.array(i[1]) == tag) else False for i in split.items()]
+#     return pd.Series(mask, index=range(1, len(mask) + 1))
