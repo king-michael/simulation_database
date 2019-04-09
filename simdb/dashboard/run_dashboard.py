@@ -1,5 +1,5 @@
 from __future__ import print_function
-from flask_migrate import Migrate
+#from flask_migrate import Migrate
 from os import environ
 from sys import exit
 
@@ -16,7 +16,7 @@ except KeyError:
 app = create_app(config_mode)
 
 
-Migrate(app, db)
+#Migrate(app, db)
 
 if __name__ == '__main__':
 
