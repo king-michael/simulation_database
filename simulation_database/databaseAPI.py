@@ -30,7 +30,7 @@ from typing import Union, List, Tuple, Optional, Any
 from collections import Iterable
 
 from contextlib import contextmanager
-from simdb.databaseModel import *
+from simulation_database.databaseModel import *
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import noload
 from sqlalchemy import or_, and_
