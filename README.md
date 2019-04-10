@@ -4,23 +4,16 @@
 Clone the repository
 
 ```
-git clone ...
+git clone git@github.com:king-michael/simulation_database.git
 ```
 
 Install
 ```
-pip install -e . --user
+pip install -e --user simulation_database
 ```
 
-## Run SimDB Viewer
-
-```
-cd simulation_database/simdb/dashboard
-
-python run_dashboard.py
-```
-
-open `127.0.0.0:5000` in browser
+## Extensions
+- [simulation_database_dashboard](https://github.com/andrejberg/simulation_database_dashboard)
 
 ## Development
 ### simDB (simdb/):
@@ -29,11 +22,3 @@ File | Note
 --- | --- 
 databaseModel.py | Classes for DB model.
 databaseAPI.py | Functions and classes for interactions with DB.
-
-### simDB Dashboard (simdb/dashboard/):
-
-File | Note
---- | ---
-run_dashboard.py | Main file to run dashboard.
-app/base/  | Main blueprint
-app/base/models.py | Classes for an additional DB which is used to run the application.
