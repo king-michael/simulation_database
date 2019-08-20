@@ -1,0 +1,3 @@
+[submodule "simdb/dashboard"]
+	path = simdb/dashboard
+	url = git@github.com:andrejberg/simulation_database_dashboard.git
