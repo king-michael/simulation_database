@@ -39,7 +39,7 @@ from sqlalchemy import or_, and_
 string_types = str if sys.version_info[0] == 3 else basestring
 
 session_info = {
-    "SIMDB_PRIORITY" : 0
+    "SIMDB_PRIORITY": 0
 }
 Session = sessionmaker(info=session_info)
 
@@ -55,7 +55,7 @@ def create_new_database(db_path, priority=None):
 
     Returns
     -------
-    session : sessionmaker
+    session : sqlalchemy.orm.session.Session
         SQL session
 
     Raises
@@ -86,7 +86,7 @@ def connect_database(db_path, priority=None):
 
     Returns
     -------
-    session : sessionmaker
+    session : sqlalchemy.orm.session.Session
         SQL session
 
     Raises
@@ -145,6 +145,7 @@ def session_handler(db_path, create=False, priority=None):
         Session.configure(bind=None)
         session.close()
 
+
 # =========================================================================== #
 # get_all_functions
 # =========================================================================== #
@@ -158,7 +159,7 @@ def get_all_keywords(session, groups=None, count=False):
     session : sqlalchemy.orm.session.Session
         SQL Alchemy session
     groups : list(str)
-        list of groups for selection
+        list of groups for selection, connects them with a OR keyword
     count : bool
         return count together with keywords and
         values list(tuple(str, int))
@@ -512,54 +513,13 @@ def get_keywords(session, entry_id):
     keywords : dict
         Keywords for the entry with `entry_id`
     """
-    query = session.query(Keywords.name, Keywords.value).join(Main).filter(Main.entry_id == entry_id)
-    keywords = dict(query.all())
+    sim = session.query(Main).filter(Main.entry_id == entry_id).one()
+    # query = session.query(Keywords.name, Keywords.value).join(Main).filter(Main.entry_id == entry_id)
+    keywords = dict([(keyword.name, keyword.value) for keyword in sim.keywords])
     return keywords
 
 
-def add_single_keyword(session, entry_id, name, value=None, unique=True, main_id=None, priority=None):
-    """
-    Function to add a single `Keyword`.
-
-    Parameters
-    ----------
-    session : sqlalchemy.orm.session.Session
-        SQL Alchemy session
-    entry_id : str
-        entry id in the database
-    name : str
-        Name of the keyword.
-    value : Union[float,int,str,bool,None]
-        Value of the keyword. (Default is None.)
-    unique : bool
-        Keyword will be assumed to be unqiue. (Default is `True`.)
-    main_id : int or None
-        ID in the `main` table. (Default is `None`.)
-    """
-
-    # evaluate priority
-    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
-
-    # get keyword if unique else None
-    keyword = session.query(Keywords).join(Main)\
-        .filter(Keywords.name == name)\
-        .filter(Main.entry_id == entry_id)\
-        .one_or_none() if unique else None
-
-    # create keyword if not there or not unique else update
-    if keyword is None:
-        if main_id is None:
-            main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
-        keyword = Keywords(name=name, value=value, main_id=main_id, priority=priority)
-    else:
-        if priority >= keyword.priority:
-            keyword.priority = priority
-            keyword.value = value
-
-    session.add(keyword)
-
-
-def update_keywords(session, entry_id, priority=None, **kwargs):
+def update_keywords(session, entry_id, keywords, priority=None, ):
     """
     Function to update / add keywords.
 
@@ -569,32 +529,33 @@ def update_keywords(session, entry_id, priority=None, **kwargs):
         SQL Alchemy session
     entry_id : str
         entry id in the database
-    kwargs : dict
+    keywords : dict
         keyword name and value
+    priority : int or None
+        Priority
     """
-
     # evaluate priority
     priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
 
-    keywords = session.query(Keywords).join(Main)\
-        .filter(Main.entry_id == entry_id)\
-        .filter(Keywords.name.in_(kwargs.keys())).all()
-    for keyword in keywords:
+    keywords_db = session.query(Keywords).join(Main) \
+        .filter(Main.entry_id == entry_id) \
+        .filter(Keywords.name.in_(keywords.keys())).all()
+    for keyword in keywords_db:
         if priority >= keyword.priority:
             keyword.priority = priority
-            keyword.value = kwargs.pop(keyword.name)
+            keyword.value = keywords.pop(keyword.name)
 
-    if len(keywords) != 0:
-        main_id = keywords[0].main_id
+    if len(keywords_db) != 0:
+        main_id = keywords_db[0].main_id
     else:
         main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
 
-    for name, value in kwargs.items():
-        keywords.append(Keywords(name=name, value=value, main_id=main_id, priority=priority))
-    session.add_all(keywords)
+    for name, value in keywords.items():
+        keywords_db.append(Keywords(name=name, value=value, main_id=main_id, priority=priority))
+    session.add_all(keywords_db)
 
 
-def set_keywords(session, entry_id, priority=None, **kwargs):
+def set_keywords(session, entry_id, keywords, priority=None):
     """
     Function to set keywords. Overwrites the old.
 
@@ -604,8 +565,10 @@ def set_keywords(session, entry_id, priority=None, **kwargs):
         SQL Alchemy session
     entry_id : str
         entry id in the database
-    kwargs : dict
+    keywords : dict
         keyword name and value
+    priority : int or None
+        Priority
     """
 
     # evaluate priority
@@ -617,12 +580,10 @@ def set_keywords(session, entry_id, priority=None, **kwargs):
         if priority >= keyword.priority:
             session.delete(keyword)
 
-    # for name, value in kwargs.items():
-    #     session.add(Keywords(name=name, value=value, main_id=main_id))
-    update_keywords(session, entry_id, priority=priority, **kwargs)
+    update_keywords(session, entry_id, keywords, priority=priority)
 
 
-def delete_keywords(session, entry_id, priority=None, *args):
+def delete_keywords(session, entry_id, keyword_names, priority=None):
     """
     Function to delete keywords.
 
@@ -632,19 +593,20 @@ def delete_keywords(session, entry_id, priority=None, *args):
         SQL Alchemy session
     entry_id : str
         entry id in the database
-    args : List[str]
-
-    Returns
-    -------
-
+    keyword_names : str or list
+        List of names to delete
+    priority : int or None
+        Priority
     """
+    if type(keyword_names) == string_types:
+        keyword_names = [keyword_names, ]
 
     # evaluate priority
     priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
 
-    keywords = session.query(Keywords).join(Main)\
-        .filter(Main.entry_id == entry_id)\
-        .filter(Keywords.name.in_(args)).all()
+    keywords = session.query(Keywords).join(Main) \
+        .filter(Main.entry_id == entry_id) \
+        .filter(Keywords.name.in_(keyword_names)).all()
     for keyword in keywords:
         if priority >= keyword.priority:
             session.delete(keyword)
@@ -664,8 +626,8 @@ def delete_all_keywords(session, entry_id, priority=None):
     # evaluate priority
     priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
 
-    keywords = session.query(Keywords).join(Main)\
-        .filter(Main.entry_id == entry_id)\
+    keywords = session.query(Keywords).join(Main) \
+        .filter(Main.entry_id == entry_id) \
         .all()
     for keyword in keywords:
         if priority >= keyword.priority:
@@ -703,8 +665,8 @@ def get_meta_groups(session, entry_id, as_list=False):
     UserWarning :
         If multiple `MetaEntry` in a `MetaGroups` have the same name.
     """
-    metagroups = session.query(MetaGroups).join(Main)\
-        .filter(Main.entry_id == entry_id)\
+    metagroups = session.query(MetaGroups).join(Main) \
+        .filter(Main.entry_id == entry_id) \
         .order_by(MetaGroups.name).all()
     if as_list:
         return [(metagroup.name, metagroup.to_list()) for metagroup in metagroups]
@@ -745,12 +707,13 @@ def get_single_meta_group(session, entry_id, name, as_list=False):
     UserWarning :
         If multiple `MetaEntry` in a `MetaGroups` have the same name.
     """
-    metagroup = session.query(MetaGroups).join(Main)\
-        .filter(Main.entry_id == entry_id)\
+    metagroup = session.query(MetaGroups).join(Main) \
+        .filter(Main.entry_id == entry_id) \
         .filter(MetaGroups.name == name).one_or_none()
     if metagroup is None:
         return None
     return metagroup.to_list() if as_list else metagroup.to_dict()
+
 
 def add_meta_group(session, entry_id, meta_group_name, unique=True, main_id=None, priority=None):
     """
@@ -768,6 +731,8 @@ def add_meta_group(session, entry_id, meta_group_name, unique=True, main_id=None
         Keyword will be assumed to be unqiue. (Default is `True`.)
     main_id : int or None
         ID in the `main` table. (Default is `None`.)
+    priority : int or None
+        Priority
 
     Returns
     -------
@@ -779,9 +744,9 @@ def add_meta_group(session, entry_id, meta_group_name, unique=True, main_id=None
     priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
 
     # get meta_group if unique else None
-    meta_group = session.query(MetaGroups).join(Main)\
-        .filter(MetaGroups.name == meta_group_name)\
-        .filter(Main.entry_id == entry_id)\
+    meta_group = session.query(MetaGroups).join(Main) \
+        .filter(MetaGroups.name == meta_group_name) \
+        .filter(Main.entry_id == entry_id) \
         .one_or_none() if unique else None
 
     # create meta_group if not there or is not unique
@@ -808,13 +773,15 @@ def delete_meta_group(session, entry_id, meta_group_name, priority=None):
         entry id in the database
     meta_group_name: str
         Name of meta group, e.g. Thermostat, Barostat
+    priority : int or None
+        Priority
     """
 
     # evaluate priority
     priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
 
     meta_groups = session.query(MetaGroups).join(Main) \
-        .filter(MetaGroups.name == meta_group_name)\
+        .filter(MetaGroups.name == meta_group_name) \
         .filter(Main.entry_id == entry_id) \
         .all()
     for meta_group in meta_groups:
@@ -822,70 +789,7 @@ def delete_meta_group(session, entry_id, meta_group_name, priority=None):
             session.delete(meta_group)
 
 
-def add_meta_data(session, entry_id, meta_group_name, unique=True, metagroup_id=None, priority=None, **kwargs):
-    """
-    Add meta data to entry.
-
-    Create MetaGroup if not there.
-
-    Parameters
-    ----------
-    session : sqlalchemy.orm.session.Session
-        SQL Alchemy session
-    entry_id : str
-        entry id in the database
-    unique : bool
-        Keyword will be assumed to be unqiue. (Default is `True`.)
-    main_id : int or None
-        ID in the `main` table. (Default is `None`.)
-    meta_group_name: str
-        Name of meta group, e.g. Thermostat, Barostat
-    **kwargs : kwargs
-        keyword1="value1", keyword2="value2"
-
-    Returns
-    -------
-    meta_entries : List[MetaEntry]
-        List of added MetaEntries
-    """
-
-    # evaluate priority
-    priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
-
-    meta_entries = session.query(MetaEntry).join(MetaGroups) \
-        .filter(MetaGroups.name == meta_group_name)\
-        .filter(MetaEntry.metagroup_id == MetaGroups.id)\
-        .filter(MetaGroups.main_id == entry_id)\
-        .filter(MetaEntry.name.in_(kwargs.keys()))\
-        .all()
-
-    if unique:
-        for meta_entry in meta_entries:
-            kwargs.pop(meta_entry.name)
-
-    if metagroup_id is None:
-        if len(meta_entries) != 0:
-            metagroup_id = meta_entries[0].metagroup_id
-        else:
-            metagroup_id = session.query(MetaGroups.id).join(Main)\
-                .filter(MetaGroups.name == meta_group_name) \
-                .filter(Main.entry_id == entry_id).first()
-            if metagroup_id is not None and len(metagroup_id) > 0:
-                metagroup_id = metagroup_id[0]
-            else:
-                main_id = session.query(Main.id).filter(Main.entry_id == entry_id).one()[0]
-                meta_group = MetaGroups(name=meta_group_name, main_id=main_id, priority=priority)
-                session.add(meta_group)
-                session.flush()
-                metagroup_id = meta_group.id
-    for name, value in kwargs.items():
-        meta_entries.append(MetaEntry(name=name, value=value, metagroup_id=metagroup_id, priority=priority))
-    session.add_all(meta_entries)
-
-    return meta_entries
-
-
-def update_meta_data(session, entry_id, meta_group_name, priority=None, **kwargs):
+def update_meta_data(session, entry_id, meta_group_name, meta_data, priority=None):
     """
     Update meta data in entry.
 
@@ -897,9 +801,10 @@ def update_meta_data(session, entry_id, meta_group_name, priority=None, **kwargs
         entry id in the database
     meta_group_name: str
         Name of meta group, e.g. Thermostat, Barostat
-    **kwargs : kwargs
-        update keyword to value
-        keyword = "value"
+    meta_data : dict
+        keyword : "value"
+    priority : int or None
+        Priority
 
     Returns
     -------
@@ -921,14 +826,14 @@ def update_meta_data(session, entry_id, meta_group_name, priority=None, **kwargs
 
         # get all meta entries for selected group and db entry which should be updated
         meta_entries = session.query(MetaEntry).join(MetaGroups).join(Main) \
-            .filter(MetaGroups.id == metagroup_id)\
-            .filter(MetaEntry.name.in_(kwargs.keys())) \
+            .filter(MetaGroups.id == metagroup_id) \
+            .filter(MetaEntry.name.in_(meta_data.keys())) \
             .all()
 
         # update existing meta entries, remove updated from kwargs
         for meta_entry in meta_entries:
             if priority >= meta_entry.priority:
-                meta_entry.value = kwargs.pop(meta_entry.name)
+                meta_entry.value = meta_data.pop(meta_entry.name)
                 meta_entry.priority = priority
 
     else:
@@ -942,13 +847,14 @@ def update_meta_data(session, entry_id, meta_group_name, priority=None, **kwargs
         metagroup_id = meta_group.id
 
     # add missing meta entries to group
-    for name, value in kwargs.items():
+    for name, value in meta_data.items():
         meta_entries.append(MetaEntry(name=name, value=value, metagroup_id=metagroup_id, priority=priority))
     session.add_all(meta_entries)
 
     return meta_entries
 
-def set_meta_data(session, entry_id, meta_group_name, priority=None, **kwargs):
+
+def set_meta_data(session, entry_id, meta_group_name, meta_data, priority=None):
     """
     set meta data in entry.
 
@@ -960,9 +866,10 @@ def set_meta_data(session, entry_id, meta_group_name, priority=None, **kwargs):
         entry id in the database
     meta_group_name: str
         Name of meta group, e.g. Thermostat, Barostat
-    **kwargs : kwargs
-        set keyword to value
-        keyword = "value"
+    meta_data : dict
+        keyword : "value"
+    priority : int or None
+        Priority
 
     Returns
     -------
@@ -972,20 +879,23 @@ def set_meta_data(session, entry_id, meta_group_name, priority=None, **kwargs):
 
     priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
 
-    meta_datas = session.query(MetaEntry).join(MetaGroups).join(Main) \
+    meta_entries = session.query(MetaEntry).join(MetaGroups).join(Main) \
         .filter(MetaGroups.name == meta_group_name) \
         .filter(Main.entry_id == entry_id) \
         .all()
-    for meta_data in meta_datas:
-        if priority >= meta_data.priority:
-            session.delete(meta_data)
+    for meta_entry in meta_entries:
+        if priority >= meta_entry.priority:
+            session.delete(meta_entry)
 
     meta_entries = update_meta_data(session=session, entry_id=entry_id,
-                                    meta_group_name=meta_group_name, priority=priority, **kwargs)
+                                    meta_group_name=meta_group_name,
+                                    meta_data=meta_data,
+                                    priority=priority)
 
     return meta_entries
 
-def remove_meta_data(session, entry_id, meta_group_name, priority=None, **kwargs):
+
+def remove_meta_data(session, entry_id, meta_group_name, meta_data, priority=None):
     """
     Remove meta data in entry.
 
@@ -997,10 +907,13 @@ def remove_meta_data(session, entry_id, meta_group_name, priority=None, **kwargs
         Entry ID in database
     meta_group_name: str
         Name of meta group, e.g. Thermostat, Barostat
-    **kwargs : kwargs
+    meta_data : dict
         keyword = "value": Value is given, remove if entry has given value
         keyword = None : Remove meta data entry independent of value
+    priority : int or None
+        Priority
     """
+    raise UserWarning("FUCK FUNCTION IS NONESENSE")
 
     priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
 
@@ -1014,7 +927,6 @@ def remove_meta_data(session, entry_id, meta_group_name, priority=None, **kwargs
         value = kwargs.get(meta_data.name)
         if priority >= meta_data.priority and (value is None or value == meta_data.value):
             session.delete(meta_data)
-
 
 
 # =========================================================================== #
@@ -1119,7 +1031,6 @@ def add_to_group(session, entry_id, group_name, priority=None):
             entry.groups.append(group)
 
 
-
 def remove_from_group(session, entry_id, group_name):
     """Remove simulation from group.
 
@@ -1168,7 +1079,33 @@ def get_group_keywords(session, group_name):
         raise NoResultFound("group_name = '{}' was not found in database.".format(group_name))
 
 
-def update_group_keywords(session, group_name, priority=None, **kwargs):
+def set_group_keywords(session, group_name, group_keywords):
+    """
+    Function to set group keywords. Overwrites the old!
+
+    Parameters
+    ----------
+    session : sqlalchemy.orm.session.Session
+        SQL Alchemy session
+    group_name : str
+        group_name in the database
+    group_keywords : dict
+        keyword name and value
+    """
+    group = session.query(Groups).filter(Groups.name == group_name).first()
+
+    if group is not None:
+
+        group.keywords_query.delete()
+        for name, value in group_keywords.items():
+            group.keywords.append(GroupKeywords(name=name, value=value))
+
+    else:
+
+        raise NoResultFound("group_name = '{}' was not found in database.".format(group_name))
+
+
+def update_group_keywords(session, group_name, group_keywords, priority=None):
     """
     Function to update / add group keywords.
     Will create new group if group is not in database.
@@ -1179,7 +1116,7 @@ def update_group_keywords(session, group_name, priority=None, **kwargs):
         SQL Alchemy session
     group_name : str
         group name in the database
-    kwargs : dict
+    group_keywords : dict
         keyword name and value
     priority: int or None
         use session priority if None
@@ -1191,10 +1128,10 @@ def update_group_keywords(session, group_name, priority=None, **kwargs):
     if group is not None:
 
         # update existing group keywords
-        group_keywords = group.keywords_query.filter(GroupKeywords.name.in_(kwargs.keys())).all()
-        for keyword in group_keywords:
+        group_keywords_db = group.keywords_query.filter(GroupKeywords.name.in_(group_keywords.keys())).all()
+        for keyword in group_keywords_db:
             if priority >= keyword.priority:
-                keyword.value = kwargs.pop(keyword.name)
+                keyword.value = group_keywords.pop(keyword.name)
                 keyword.priority = priority
 
     else:
@@ -1203,8 +1140,7 @@ def update_group_keywords(session, group_name, priority=None, **kwargs):
         group = Groups(name=group_name, priority=priority)
         session.add(group)
 
-    # add missing keywords
-    for name, value in kwargs.items():
+    for name, value in group_keywords.items():
         group.keywords.append(GroupKeywords(name=name, value=value, priority=priority))
 
 
@@ -1282,24 +1218,22 @@ def set_group_keywords(session, group_name, priority=None, **kwargs):
     update_group_keywords(session, group_name, priority=priority, **kwargs)
 
 
-
-
 def store_dict(entry_id,
                path,
-               id = None,
-               owner = None,
-               url = None,
-               sim_type = None,
-               description = None,
-               created_on = None,
+               id=None,
+               owner=None,
+               url=None,
+               sim_type=None,
+               description=None,
+               created_on=None,
                # added_on = None,
-               n_atoms = None,
-               n_steps = None,
-               time_step = None,
-               raw_keywords = {},
-               raw_mdp_parameters = {},
+               n_atoms=None,
+               n_steps=None,
+               time_step=None,
+               raw_keywords={},
+               raw_mdp_parameters={},
                **kwargs
-              ):
+               ):
     """
     Function to get a simulation object with all features.
     The function will automatically sort if the keywords belong in the right table and create the necessary
@@ -1344,51 +1278,49 @@ def store_dict(entry_id,
     input_kwargs = locals()
     input_kwargs['type'] = input_kwargs.pop('sim_type')
     _main_kwargs = [i for i in vars(Main).keys() if not i.startswith("_")]
-    
-    main_kwargs = dict( (k,v) for k,v in input_kwargs.items() if k in _main_kwargs and v is not None)
+
+    main_kwargs = dict((k, v) for k, v in input_kwargs.items() if k in _main_kwargs and v is not None)
     # update main by mdp parameters
     for k in list(raw_mdp_parameters.keys())[:]:
         if k in _main_kwargs:
             main_kwargs[k] = raw_mdp_parameters[k]
             del raw_mdp_parameters[k]
-    
+
     # update main by mdp_parameters
     for k in list(raw_keywords.keys())[:]:
         if k in _main_kwargs:
             main_kwargs[k] = raw_keywords[k]
             del raw_keywords[k]
-    
-    keywords = [] if not 'keywords' in kwargs or kwargs['keywords'] is None else  kwargs['keywords']
-    keywords.extend([Keywords(name=k,value=v) for k,v in raw_keywords.items()])
-    
+
+    keywords = [] if not 'keywords' in kwargs or kwargs['keywords'] is None else kwargs['keywords']
+    keywords.extend([Keywords(name=k, value=v) for k, v in raw_keywords.items()])
+
     # update keywords
     if len(keywords) != 0:
-        main_kwargs['keywords'] = keywords 
-    
+        main_kwargs['keywords'] = keywords
 
     metagroups = [] if not 'meta' in kwargs or kwargs['meta'] is None else kwargs['meta']
-    
+
     for key in list(raw_mdp_parameters.keys())[:]:
         value = raw_mdp_parameters[key]
         if type(value) == dict:
             metagroups.append(
                 MetaGroups(
                     name=key,
-                    entries=[MetaEntry(name=k,value=v) for k,v in value.items()],
-                          )
+                    entries=[MetaEntry(name=k, value=v) for k, v in value.items()],
+                )
             )
         else:
             raise UserWarning("Dictionary is needed but got type={} for {}.".format(type(value), value))
-    
+
     # update meta
     if len(metagroups) != 0:
-        main_kwargs['meta'] = metagroups 
-        
-    # create sim
-    sim = Main(**main_kwargs)
-    
-    return sim
+        main_kwargs['meta'] = metagroups
 
+        # create sim
+    sim = Main(**main_kwargs)
+
+    return sim
 
 # DEPRICATED
 # def selectByKeyword(table, name, value):

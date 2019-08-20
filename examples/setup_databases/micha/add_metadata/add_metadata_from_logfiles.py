@@ -76,10 +76,10 @@ for sim in sims:
 
     # add metagroups and data to sesion
     for meta_group_name, meta_group_data in dict_metagroups.items():
-        api.add_meta_data(session=session,
+        api.set_meta_data(session=session,
                           entry_id=sim.entry_id,
                           meta_group_name=meta_group_name,
-                          **meta_group_data)
+                          meta_data=meta_group_data)
 
 session.commit()
 session.close()
