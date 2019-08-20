@@ -2,6 +2,9 @@ from os import environ
 
 
 class Config(object):
+    """
+    Base config object for flask application.
+    """
     SECRET_KEY = 'key'
     SQLALCHEMY_DATABASE_URI = 'sqlite:///dashboard.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -20,6 +23,9 @@ class Config(object):
 
 
 class ProductionConfig(Config):
+    """
+    Config object extension for production environment.
+    """
     DEBUG = False
 
     # AB: We can use this if we want to use a real DB server
@@ -34,6 +40,9 @@ class ProductionConfig(Config):
 
 
 class DebugConfig(Config):
+    """
+    Config object extension for development environment.
+    """
     DEBUG = True
 
     SELECTED_DATABASE = {"id": 1,

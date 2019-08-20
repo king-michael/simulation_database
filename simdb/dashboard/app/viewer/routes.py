@@ -130,7 +130,7 @@ def filter_table():
     # convert dates
     table["updated_on"] = table["updated_on"].apply(lambda x: x.strftime('%Y/%m/%d'))
     table["added_on"] = table["added_on"].apply(lambda x: x.strftime('%Y/%m/%d'))
-    table["created_on"] = table["created_on"].apply(lambda x: x.strftime('%Y/%m/%d') if x is not None else "--")
+    table["created_on"] = table["created_on"].apply(lambda x: x.strftime('%Y/%m/%d') if x not in [None, pd.NaT] else "--")
 
     return table.to_html(classes=str("table"), escape=False, index=False, border=0) # convert to HTML
 
