@@ -200,15 +200,15 @@ def setup_database(list_data, db, owner=None, recreate=True):
 
     for data in list_data:
         data = map_data_to_map(data)
-        data['owner'] = owner if owner is not None else data['owner'] if 'owner' in data else _owner
+        data['owner'] = owner if owner is not None else data.get('owner', _owner)
         sim = Main(
             entry_id=data['entry_id'],
             url=data['url'],
             type=data['type'],
             owner=data['owner'],
             path=data['path'],
-            created_on=data['created_on'] if 'created_on' in data.keys() else None,
-            description=data['description'] if 'description' in data.keys() else "",
+            created_on=data.get('created_on', None),
+            description=data.get('description', ''),
         )
         session.add(sim)
     session.commit()
