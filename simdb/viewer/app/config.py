@@ -9,4 +9,4 @@ class Config(object):
 
 if __name__ == '__main__':
     for key in Config.__dict__:
-        print key, Config.__dict__[key]
+        print(key, Config.__dict__[key])
