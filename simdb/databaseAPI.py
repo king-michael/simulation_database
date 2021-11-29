@@ -1197,7 +1197,7 @@ def delete_all_group_keywords(session, group_name, priority=None):
         raise NoResultFound("group_name = '{}' was not found in database.".format(group_name))
 
 
-def set_group_keywords(session, group_name, priority=None, **kwargs):
+def set_group_keywords(session, group_name, group_keywords, priority=None, **kwargs):
     """
     Function to set group keywords. Overwrites the old!
 
@@ -1215,7 +1215,7 @@ def set_group_keywords(session, group_name, priority=None, **kwargs):
 
     priority = priority if priority is not None else session.info["SIMDB_PRIORITY"]
     delete_all_group_keywords(session, group_name, priority=priority)
-    update_group_keywords(session, group_name, priority=priority, **kwargs)
+    update_group_keywords(session, group_name, group_keywords, priority=priority, **kwargs)
 
 
 def store_dict(entry_id,
